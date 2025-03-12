@@ -1,0 +1,92 @@
+version: "3"
+
+services:
+  unbound:
+    image: klutchell/unbound:latest
+    container_name: unbound
+    hostname: unbound
+    networks:
+      pihole_network:
+        ipv4_address: 172.20.0.2
+    volumes:
+      - './etc-unbound/unbound.conf:/etc/unbound/unbound.conf'
+    restart: unless-stopped
+
+  pihole:
+    image: pihole/pihole:latest
+    container_name: pihole
+    hostname: pihole
+    networks:
+      pihole_network:
+        ipv4_address: 172.20.0.3
+    environment:
+      TZ: "${TZ}"
+      PIHOLE_DNS_: "172.20.0.2#53"
+    volumes:
+      - './etc-pihole:/etc/pihole'
+      - './etc-dnsmasq.d:/etc/dnsmasq.d'
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "80:80/tcp"
+      - "443:443/tcp"
+    restart: unless-stopped
+    depends_on:
+      - unbound
+
+  samba:
+    image: dperson/samba
+    container_name: samba
+    hostname: samba
+    networks:
+      samba_network:
+        ipv4_address: 172.21.0.2
+    volumes:
+      - './etc-samba/smb.conf:/etc/samba/smb.conf'
+      - '/mnt/shared-folders:/mnt/shared-folders'
+    ports:
+      - "139:139/tcp"
+      - "445:445/tcp"
+    restart: unless-stopped
+    
+  suricata:
+    image: jasonish/suricata:latest
+    container_name: suricata
+    hostname: suricata
+    networks:
+      pihole_network:
+        ipv4_address: 172.20.0.4
+    volumes:
+      - './etc-suricata:/etc/suricata'
+      - './var-log-suricata:/var/log/suricata'
+    cap_add:
+      - NET_ADMIN
+      - SYS_NICE
+    command: ["-c", "/etc/suricata/suricata.yaml", "-i", "eth0"]
+    restart: unless-stopped
+    
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    hostname: portainer
+    networks:
+      pihole_network:
+        ipv4_address: 172.20.0.5
+    ports:
+      - "9000:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./portainer_data:/data
+    restart: unless-stopped
+
+networks:
+  pihole_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/24
+  samba_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/24

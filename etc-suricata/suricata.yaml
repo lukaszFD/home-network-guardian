@@ -1,0 +1,23 @@
+%YAML 1.1
+---
+# Konfiguracja podstawowa
+default-rule-path: /etc/suricata/rules
+rule-files:
+  - suricata.rules
+
+# Tryb af-packet (zalecany dla wydajności)
+af-packet:
+  - interface: eth0
+    threads: 2
+    cluster-id: 99
+    cluster-type: cluster_flow
+
+# Logowanie
+logging:
+  outputs:
+    - console:
+        enabled: yes
+    - file:
+        enabled: yes
+        filename: /var/log/suricata/eve.json
+        append: yes

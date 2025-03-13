@@ -53,9 +53,7 @@ services:
     image: jasonish/suricata:latest
     container_name: suricata
     hostname: suricata
-    networks:
-      pihole_network:
-        ipv4_address: 172.20.0.4
+    network_mode: host
     volumes:
       - './etc-suricata:/etc/suricata'
       - './var-log-suricata:/var/log/suricata'

@@ -52,7 +52,7 @@ services:
   suricata:
     image: jasonish/suricata:latest
     container_name: suricata
-    hostname: suricata
+    hostname: suricata-home-network-guardian
     network_mode: host
     volumes:
       - './etc-suricata:/etc/suricata'

@@ -185,38 +185,216 @@ rule-files:
 # Tryb af-packet (zalecany dla wydajności)
 af-packet:
   - interface: eth0
-    threads: 2
+    threads: 4  # Zwiększenie liczby wątków, zależnie od zasobów
     cluster-id: 99
     cluster-type: cluster_flow
+    use-mmap: yes
+    tpacket-v3: yes
 
 # Logowanie
 logging:
+  default-log-level: debug   # Zmieniono na debug, aby uzyskać więcej szczegółowych informacji
   outputs:
     - console:
         enabled: yes
+        level: debug  # Więcej informacji na konsoli
     - file:
         enabled: yes
+        level: debug
+        filename: /var/log/suricata/suricata.log
+    - eve-log:
+        enabled: yes
+        filetype: json
         filename: /var/log/suricata/eve.json
+        types:
+          - alert:
+              metadata: yes
+              tagged-packets: yes
+          - http:
+              extended: yes
+          - dns:
+              version: 2
+          - tls:
+              extended: yes
+          - files:
+              force-magic: yes
+              force-md5: yes
+          - ssh
+          - smtp
+    - stats:
+        enabled: yes
+        filename: /var/log/suricata/stats.log
         append: yes
+        totals: yes
+        threads: no
+
+# Ustawienia detekcji
+detect:
+  profile: medium
+  custom-values:
+    toclient-src: 0.0.0.0/0  # Ustawienie na całą sieć
+    toserver-dst: 0.0.0.0/0  # Ustawienie na całą sieć
+  icmp: yes  # Włącz detekcję ICMP
+
+# Ustawienia HTTP
+app-layer:
+  protocols:
+    http:
+      enabled: yes
+      detection-ports:
+        dp: 80, 8080
+    tls:
+      enabled: yes
+      detection-ports:
+        dp: 443
+
+# Ustawienia przepływu
+flow:
+  enabled: yes
+  timeout:
+    new: 30
+    established: 300
+    closed: 0
+  emergency-recovery: 30
+
+# Ustawienia blokowania (wyłączone)
+action-files:
+  - drop:
+      enabled: no
+  - reject:
+      enabled: no
+  - pass:
+      enabled: yes
+
+# Ustawienia detekcji skanowania portów
+detect-engine:
+  - profile: medium
+  - custom-values:
+      toclient-src: 0.0.0.0/0  # Ustawienie na całą sieć
+      toserver-dst: 0.0.0.0/0  # Ustawienie na całą sieć
+
+# Ustawienia detekcji Wi-Fi (jeśli przechwytujesz ruch Wi-Fi)
+# Wymaga przechwytywania ramek 802.11 za pomocą np. tcpdump
+# i przekazania ich do Suricaty
+pcap:
+  - interface: eth0
+    checksum-checks: no
+
+# Ustawienia dla protokołów
+protocols:
+  icmp:
+    enabled: yes  # Włącz detekcję ICMP
+  tcp:
+    enabled: yes
+    detection-ports:
+      dp: 1-65535  # Skanuj wszystkie porty TCP
+  udp:
+    enabled: yes
+    detection-ports:
+      dp: 1-65535  # Skanuj wszystkie porty UDP
+
+# Ustawienia dla Wi-Fi (jeśli przechwytujesz ruch Wi-Fi)
+wifi:
+  enabled: yes  # Włącz detekcję ramek Wi-Fi
+  interfaces:
+    - eth0  # Podmień na odpowiedni interfejs Wi-Fi
+
+# Ustawienia dla EVE (Extended Log Format)
+eve-log:
+  enabled: yes
+  file: /var/log/suricata/eve.json
+  types:
+    - alert
+    - http
+    - tls
+    - dns
+    - flow
+    - icmp
+    - tcp
+    - udp
+    - wifi
+
+# Ustawienia dla klasyfikacji zdarzeń
+classification-file: /etc/suricata/classification.config
+
+# Ustawienia dla referencji
+reference-config: /etc/suricata/reference.config
 EOF
 
 cat <<EOF > ./etc-suricata/rules/suricata.rules
-alert tcp any any -> any any (msg:"Test rule"; sid:1000001; rev:1;)
+# Reguła do wykrywania ruchu HTTP
+alert tcp any any -> 192.168.1.0/24 80 (msg:"HTTP Traffic Detected"; sid:1000001; rev:1;)
+
+# Reguła do wykrywania ruchu HTTPS
+alert tcp any any -> 192.168.1.0/24 443 (msg:"HTTPS Traffic Detected"; sid:1000002; rev:1;)
+
+# Reguła do wykrywania skanowania portów TCP
+alert tcp any any -> 192.168.1.0/24 any (msg:"Port Scan Detected"; flags: S; threshold: type both, track by_src, count 5, seconds 60; sid:1000003; rev:1;)
+
+# Reguła do wykrywania skanowania portów UDP
+alert udp any any -> 192.168.1.0/24 any (msg:"UDP Port Scan Detected"; threshold: type both, track by_src, count 5, seconds 60; sid:1000005; rev:1;)
+
+# Reguła do wykrywania pingów (ICMP Echo Request)
+alert icmp any any -> 192.168.1.0/24 any (msg:"ICMP Ping Detected"; sid:1000004; rev:1;)
+
+# Reguła do wykrywania ramek deauthentication (Wi-Fi)
+alert wifi any any -> any any (msg:"Wi-Fi Deauthentication Attack Detected"; wlan.fc.type_subtype: 12; sid:1000006; rev:1;)
 EOF
 
 cat <<EOF > ./etc-suricata/classification.config
+# Klasyfikacje zdarzeń
 config classification: not-suspicious,Not Suspicious Traffic,3
 config classification: unknown,Unknown Traffic,3
 config classification: bad-unknown,Potentially Bad Traffic,2
+config classification: attempted-recon,Attempted Information Leak,2
+config classification: successful-recon,Information Leak,2
+config classification: attempted-dos,Attempted Denial of Service,2
+config classification: successful-dos,Denial of Service,2
+config classification: attempted-user,Attempted User Privilege Gain,1
+config classification: successful-user,Successful User Privilege Gain,1
+config classification: attempted-admin,Attempted Administrator Privilege Gain,1
+config classification: successful-admin,Successful Administrator Privilege Gain,1
 EOF
 
 cat <<EOF > ./etc-suricata/reference.config
-# Działające i użyteczne referencje
+# Linki do zewnętrznych źródeł
 config reference: cve       https://cve.mitre.org/cgi-bin/cvename.cgi?name=
 config reference: nessus    https://www.tenable.com/plugins/nessus/
 config reference: exploitdb https://www.exploit-db.com/exploits/
 config reference: msft      https://technet.microsoft.com/security/bulletin/
 config reference: url       https://suricata.io/
+EOF
+
+mkdir -p ./etc-prometheus
+mkdir -p ./etc-grafana
+
+cat <<EOF > ./etc-prometheus/prometheus.yml
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['192.168.1.5:9100']
+EOF
+
+mkdir -p ./etc-squid
+mkdir -p ./var-log-squid
+
+cat <<EOF > ./etc-squid/squid.conf
+http_port 3128
+
+# Blokowanie listy StevenBlack (porn + social)
+acl blocklist_stevenblack dstdomain "/etc/squid/blocklists/stevenblack-domains.txt"
+http_access deny blocklist_stevenblack
+
+# Zezwalanie na dostęp z sieci lokalnej
+acl localnet src 172.20.0.0/24
+http_access allow localnet
+
+# Logi
+access_log /var/log/squid/access.log
+cache_log /var/log/squid/cache.log
 EOF
 
 echo "Foldery i pliki konfiguracyjne zostały utworzone."

@@ -15,9 +15,13 @@ af-packet:
 # Logowanie
 logging:
   outputs:
-    - console:
+    - fast:
         enabled: yes
-    - file:
+        file: /var/log/suricata/fast.log
+    - eve-log:
         enabled: yes
-        filename: /var/log/suricata/eve.json
-        append: yes
+        file: /var/log/suricata/eve.json
+        types:
+          - alert
+          - http
+          - dns

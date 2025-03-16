@@ -58,12 +58,52 @@ services:
       internal_network:
         ipv4_address: 172.20.0.5
     environment:
-      MONGO_INITDB_ROOT_USERNAME: "${USR}"
-      MONGO_INITDB_ROOT_PASSWORD: "${PASS}"
+      MONGO_INITDB_ROOT_USERNAME: "${MONGODB_USERNAME}"
+      MONGO_INITDB_ROOT_PASSWORD: "${MONGODB_PASSWORD}"
     volumes:
       - './etc-mongo:/data/db'
     restart: unless-stopped
 
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.0
+    container_name: elasticsearch
+    hostname: elasticsearch
+    networks:
+      internal_network:
+        ipv4_address: 172.20.0.6
+    environment:
+      - "discovery.type=single-node"
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+      - './etc-elasticsearch:/usr/share/elasticsearch/data'
+    restart: unless-stopped
+    
+  graylog:
+    image: graylog/graylog:6.1
+    container_name: graylog
+    hostname: graylog
+    networks:
+      internal_network:
+        ipv4_address: 172.20.0.7
+    environment:
+     - GRAYLOG_HTTP_EXTERNAL_URI=http://172.20.0.7:9000/
+     - GRAYLOG_PASSWORD_SECRET=${GRAYLOG_PASSWORD_SECRET}
+     - GRAYLOG_ROOT_PASSWORD_SHA2=${GRAYLOG_ROOT_PASSWORD_SHA2}
+     - GRAYLOG_MONGODB_URI=mongodb://graylog:${MONGODB_PASSWORD}@172.20.0.5:27017/graylog
+     - GRAYLOG_ELASTICSEARCH_HOSTS=http://172.20.0.6:9200
+    volumes:
+      - './etc-graylog:/etc/graylog'
+      - './var-log-graylog:/var/log/graylog'
+    depends_on:
+      - mongo
+      - elasticsearch
+    ports:
+      - "9001:9000/tcp"
+      - "1514:1514/tcp"
+      - "1514:1514/udp"
+      - "5044:5044/tcp"
+    restart: unless-stopped
+    
   portainer:
     image: portainer/portainer-ce:latest
     container_name: portainer

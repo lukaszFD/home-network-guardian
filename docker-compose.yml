@@ -33,21 +33,7 @@ services:
     restart: unless-stopped
     depends_on:
       - unbound
-      
-  portainer:
-    image: portainer/portainer-ce:latest
-    container_name: portainer
-    hostname: portainer
-    networks:
-      internal_network:
-        ipv4_address: 172.20.0.4
-    ports:
-      - "9000:9000"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./portainer_data:/data
-    restart: unless-stopped
-    
+
   squid:
     image: ubuntu/squid:latest
     container_name: squid
@@ -55,13 +41,41 @@ services:
     hostname: squid
     networks:
       internal_network:
-        ipv4_address: 172.20.0.5
+        ipv4_address: 172.20.0.4
     volumes:
       - './etc-squid/squid.conf:/etc/squid/squid.conf'
       - './var-log-squid:/var/log/squid'
       - './etc-squid/blocklists:/etc/squid/blocklists'
     ports:
       - "3128:3128/tcp"
+    restart: unless-stopped
+
+  mongo:
+    image: mongo
+    container_name: mongo
+    hostname: mongo
+    networks:
+      internal_network:
+        ipv4_address: 172.20.0.5
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: "${USR}"
+      MONGO_INITDB_ROOT_PASSWORD: "${PASS}"
+    volumes:
+      - './etc-mongo:/data/db'
+    restart: unless-stopped
+
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    hostname: portainer
+    networks:
+      internal_network:
+        ipv4_address: 172.20.0.8
+    ports:
+      - "9000:9000/tcp"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./portainer_data:/data
     restart: unless-stopped
 
   samba:
@@ -73,7 +87,7 @@ services:
       - './etc-samba/smb.conf:/etc/samba/smb.conf'
       - '/mnt/shared-folders:/mnt/shared-folders'
     restart: unless-stopped
-    
+
   suricata:
     image: jasonish/suricata:latest
     container_name: suricata

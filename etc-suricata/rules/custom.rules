@@ -1,0 +1,36 @@
+# =============================
+# Custom Suricata Rules for Network Security Monitoring
+# Author: Łukasz
+# Description: These rules help detect various network threats, such as port scans, DoS attacks, MITM attacks, and exploitation attempts.
+# =============================
+
+# ----------- 1. Detect Nmap/Masscan Port Scanning (TCP) -----------
+alert tcp any any -> $HOME_NET any (msg:"Possible Nmap or masscan scan detected"; flags:S; dsize:0; threshold:type threshold, track by_src, count 10, seconds 3; sid:1000001; rev:1;)
+
+# ----------- 2. Detect UDP Port Scanning -----------
+alert udp any any -> $HOME_NET any (msg:"Possible UDP scan detected"; threshold:type threshold, track by_src, count 10, seconds 3; sid:1000002; rev:1;)
+
+# ----------- 3. Detect ICMP Flood Attack -----------
+alert icmp any any -> $HOME_NET any (msg:"ICMP Flood Attack Detected"; itype:8; threshold:type threshold, track by_src, count 20, seconds 5; sid:1000003; rev:1;)
+
+# ----------- 4. Detect ARP Spoofing (MITM Attack) -----------
+alert arp any any -> any any (msg:"Possible ARP spoofing detected"; sid:1000004; rev:1;)
+
+# ----------- 5. Detect Brute-force SSH login attempts -----------
+alert tcp any any -> $HOME_NET 22 (msg:"SSH brute-force attempt"; flags:S; threshold:type threshold, track by_src, count 5, seconds 60; sid:1000005; rev:1;)
+
+# ----------- 6. Detect DNS Tunneling (Data Exfiltration via DNS) -----------
+alert udp any any -> any 53 (msg:"Possible DNS tunneling detected"; dsize:>200; sid:1000006; rev:1;)
+
+# ----------- 7. Detect Possible SQL Injection in HTTP Requests -----------
+alert http any any -> $HOME_NET any (msg:"Possible SQL Injection"; content:"select "; nocase; http_uri; sid:1000007; rev:1;)
+alert http any any -> $HOME_NET any (msg:"Possible SQL Injection"; content:"union "; nocase; http_uri; sid:1000008; rev:1;)
+
+# ----------- 8. Detect EternalBlue (SMB Exploit) Attempts -----------
+alert tcp any any -> $HOME_NET 445 (msg:"Possible SMB Exploit Attempt (EternalBlue)"; content:"|00 00 00 90 ff 53 4d 42 72 00 00 00 00 18 53 c8|"; sid:1000009; rev:1;)
+
+# ----------- 9. Detect Large ICMP Packets (Potential Ping of Death) -----------
+alert icmp any any -> $HOME_NET any (msg:"Possible Ping of Death attack detected"; itype:8; dsize:>1000; sid:1000010; rev:1;)
+
+# ----------- 10. Detect Fragmented ICMP Packets (Possible Evasion or PoD Attack) -----------
+alert ip any any -> $HOME_NET any (msg:"Fragmented ICMP packet - Possible Ping of Death"; fragbits:M; sid:1000011; rev:1;)

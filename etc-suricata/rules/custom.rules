@@ -1,6 +1,6 @@
 # =============================
 # Custom Suricata Rules for Network Security Monitoring
-# Author: Łukasz
+# Author: Lukasz Dejko
 # Description: These rules help detect various network threats, such as port scans, DoS attacks, MITM attacks, and exploitation attempts.
 # =============================
 
@@ -14,7 +14,7 @@ alert udp any any -> $HOME_NET any (msg:"Possible UDP scan detected"; threshold:
 alert icmp any any -> $HOME_NET any (msg:"ICMP Flood Attack Detected"; itype:8; threshold:type threshold, track by_src, count 20, seconds 5; sid:1000003; rev:1;)
 
 # ----------- 4. Detect ARP Spoofing (MITM Attack) -----------
-alert arp any any -> any any (msg:"Possible ARP spoofing detected"; sid:1000004; rev:1;)
+# alert arp any any -> any any (msg:"Possible ARP spoofing detected"; sid:1000004; rev:1;)
 
 # ----------- 5. Detect Brute-force SSH login attempts -----------
 alert tcp any any -> $HOME_NET 22 (msg:"SSH brute-force attempt"; flags:S; threshold:type threshold, track by_src, count 5, seconds 60; sid:1000005; rev:1;)

@@ -1,0 +1,14 @@
+filebeat.inputs:
+  - type: filestream
+    id: suricata-logs
+    enabled: true
+    paths:
+      - /home/hunter/var-log-suricata/eve.json
+    json.keys_under_root: true
+    json.add_error_key: true
+    fields:
+      log_type: suricata
+    fields_under_root: true
+
+output.logstash:
+  hosts: ["127.0.0.1:5044"]

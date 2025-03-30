@@ -88,7 +88,7 @@ services:
     volumes:
       - './etc-elasticsearch:/usr/share/elasticsearch/data'
     ports:
-      - "9200:9200"  # Mapowanie portu 9200 na hosta
+      - "9200:9200"
     restart: unless-stopped
     
   graylog:
@@ -168,6 +168,47 @@ services:
       - './etc-grafana/dashboards:/etc/grafana/dashboards'
       - 'grafana_data:/var/lib/grafana'
     restart: unless-stopped
+    
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    hostname: cadvisor
+    network_mode: host
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+      - /var/run/docker.sock:/var/run/docker.sock:rw
+    devices:
+      - /dev/kmsg:/dev/kmsg
+    restart: unless-stopped
+    privileged: true
+    command:
+      - --housekeeping_interval=30s
+      - --max_housekeeping_interval=60s
+
+  firefox:
+    image: lscr.io/linuxserver/firefox:latest
+    container_name: firefox
+    hostname: firefox
+    networks:
+      internal_network:
+        ipv4_address: 172.20.0.10
+    dns: 172.20.0.3
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Warsaw
+      - FIREFOX_CLI=https://www.linuxserver.io/
+    security_opt:
+      - seccomp=unconfined
+    ports:
+      - "4000:3000"
+      - "4001:3001"
+    shm_size: 1gb
+    restart: unless-stopped
 
 networks:
   internal_network:
@@ -175,7 +216,6 @@ networks:
     ipam:
       config:
         - subnet: 172.20.0.0/24
-
 volumes:
   prometheus_data:
   grafana_data:

@@ -10,5 +10,16 @@ filebeat.inputs:
       log_type: suricata
     fields_under_root: true
 
+  - type: filestream
+    id: disk-usage-logs
+    enabled: true
+    paths:
+      - /home/hunter/var-log-disk/disk_usage_graylog.json
+    json.keys_under_root: true
+    json.add_error_key: true
+    fields:
+      log_type: disk_usage
+    fields_under_root: true
+
 output.logstash:
   hosts: ["127.0.0.1:5044"]

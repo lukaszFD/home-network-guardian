@@ -19,6 +19,8 @@ services:
     networks:
       internal_network:
         ipv4_address: 172.20.0.3
+      squid_network:
+        ipv4_address: 172.40.0.2
     environment:
       TZ: "${TZ}"
       PIHOLE_DNS_: "172.20.0.2#53"
@@ -53,8 +55,8 @@ services:
     user: "root"
     hostname: squid
     networks:
-      internal_network:
-        ipv4_address: 172.20.0.4
+      squid_network:
+        ipv4_address: 172.40.0.3
     volumes:
       - './etc-squid/squid.conf:/etc/squid/squid.conf'
       - './var-log-squid:/var/log/squid'
@@ -69,8 +71,8 @@ services:
     user: "root"
     hostname: squid-tabl
     networks:
-      internal_network:
-        ipv4_address: 172.20.0.5
+      squid_network:
+        ipv4_address: 172.40.0.4
     volumes:
       - './etc-squid-tabl/squid.conf:/etc/squid/squid.conf'
       - './var-log-squid-tabl:/var/log/squid'
@@ -128,8 +130,8 @@ services:
     container_name: portainer
     hostname: portainer
     networks:
-      internal_network:
-        ipv4_address: 172.20.0.8
+      portainer_network:
+        ipv4_address: 172.50.0.2
     ports:
       - "9010:9000/tcp"
     volumes:
@@ -202,14 +204,27 @@ services:
       - --housekeeping_interval=30s
       - --max_housekeeping_interval=60s
 
+  unbound_firefox:
+    image: klutchell/unbound:latest
+    container_name: unbound_firefox
+    hostname: unbound_firefox
+    networks:
+      firefox_network:
+        ipv4_address: 172.30.0.2
+    volumes:
+      - './etc-unbound-firefox/unbound.conf:/etc/unbound/unbound.conf'
+    restart: unless-stopped
+
   firefox:
     image: lscr.io/linuxserver/firefox:latest
     container_name: firefox
     hostname: firefox
+    tmpfs:
+      - /config
     networks:
-      internal_network:
-        ipv4_address: 172.20.0.10
-    dns: 172.20.0.3
+      firefox_network:
+        ipv4_address: 172.30.0.3
+    dns: 172.30.0.2
     environment:
       - PUID=1000
       - PGID=1000
@@ -229,6 +244,22 @@ networks:
     ipam:
       config:
         - subnet: 172.20.0.0/24
+  firefox_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
+  squid_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.40.0.0/24
+  portainer_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.50.0.0/24
+
 volumes:
   prometheus_data:
   grafana_data:

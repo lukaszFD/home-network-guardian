@@ -33,19 +33,6 @@ services:
     restart: unless-stopped
     depends_on:
       - unbound
-
-  pi.alert:
-    container_name: pi.alert
-    image: jokobsk/pi.alert:latest
-    network_mode: host
-    volumes:
-      - ./etc-pi-alert/config:/home/pi/pialert/config
-      - ./var-log-pi-alert:/home/pi/pialert/db
-    environment:
-      - TZ=Europe/Warsaw
-    ports:
-      - "20211:20211"
-    restart: unless-stopped
   
   squid:
     image: ubuntu/squid:latest
@@ -123,30 +110,6 @@ services:
       - elasticsearch
     restart: unless-stopped
 
-  portainer:
-    image: portainer/portainer-ce:latest
-    container_name: portainer
-    hostname: portainer
-    networks:
-      portainer_network:
-        ipv4_address: 172.50.0.2
-    ports:
-      - "9010:9000/tcp"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./portainer_data:/data
-    restart: unless-stopped
-
-  samba:
-    image: dperson/samba
-    container_name: samba
-    hostname: samba
-    network_mode: host
-    volumes:
-      - './etc-samba/smb.conf:/etc/samba/smb.conf'
-      - '/mnt/shared-folders:/mnt/shared-folders'
-    restart: unless-stopped
-
   suricata:
     image: jasonish/suricata:latest
     container_name: suricata
@@ -202,66 +165,12 @@ services:
       - --housekeeping_interval=30s
       - --max_housekeeping_interval=60s
 
-  unbound_firefox:
-    image: klutchell/unbound:latest
-    container_name: unbound_firefox
-    hostname: unbound_firefox
-    networks:
-      firefox_network:
-        ipv4_address: 172.30.0.2
-    volumes:
-      - './etc-unbound-firefox/unbound.conf:/etc/unbound/unbound.conf'
-    restart: unless-stopped
-
-  firefox:
-    image: lscr.io/linuxserver/firefox:latest
-    container_name: firefox
-    hostname: firefox
-    tmpfs:
-      - /config
-    networks:
-      firefox_network:
-        ipv4_address: 172.30.0.3
-    dns: 172.30.0.2
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Europe/Warsaw
-      - FIREFOX_CLI=https://www.linuxserver.io/
-    security_opt:
-      - seccomp=unconfined
-    ports:
-      - "4000:3000"
-      - "4001:3001"
-    shm_size: 1gb
-    restart: unless-stopped
-
-  mysqldb:
-    image: mysql:8.0
-    container_name: mysql_db
-    restart: unless-stopped
-    ports:
-      - "3306:3306"
-    environment:
-      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
-      MYSQL_DATABASE: dns_logs
-      MYSQL_ROOT_HOST: "%"
-    volumes:
-      - mysql_data:/var/lib/mysql
-    networks:
-      - mysql_network
-
 networks:
   internal_network:
     driver: bridge
     ipam:
       config:
         - subnet: 172.20.0.0/24
-  firefox_network:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.30.0.0/24
   squid_network:
     driver: bridge
     ipam:
@@ -272,15 +181,9 @@ networks:
     ipam:
       config:
         - subnet: 172.50.0.0/24
-  mysql_network:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.60.0.0/24
 
 volumes:
   prometheus_data:
   grafana_data:
   loki_data:
-  mysql_data:
   

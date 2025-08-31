@@ -1,0 +1,10 @@
+services:
+  samba:
+    image: dperson/samba
+    container_name: samba
+    hostname: samba
+    network_mode: host
+    volumes:
+      - './etc-samba/smb.conf:/etc/samba/smb.conf'
+      - '/mnt/shared-folders:/mnt/shared-folders'
+    restart: unless-stopped

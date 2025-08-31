@@ -1,0 +1,13 @@
+services:
+  pi.alert:
+    container_name: pi.alert
+    image: jokobsk/pi.alert:latest
+    network_mode: host
+    volumes:
+      - ./etc-pi-alert/config:/home/pi/pialert/config
+      - ./var-log-pi-alert:/home/pi/pialert/db
+    environment:
+      - TZ=Europe/Warsaw
+    ports:
+      - "20211:20211"
+    restart: unless-stopped

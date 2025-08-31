@@ -1,0 +1,40 @@
+services:
+  unbound_firefox:
+    image: klutchell/unbound:latest
+    container_name: unbound_firefox
+    hostname: unbound_firefox
+    networks:
+      firefox_network:
+        ipv4_address: 172.31.0.2
+    volumes:
+      - './etc-unbound-firefox/unbound.conf:/etc/unbound/unbound.conf'
+    restart: unless-stopped
+
+  firefox:
+    image: lscr.io/linuxserver/firefox:latest
+    container_name: firefox
+    hostname: firefox
+    tmpfs:
+      - /config
+    networks:
+      firefox_network:
+        ipv4_address: 172.31.0.3
+    dns: 172.31.0.2
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Warsaw
+      - FIREFOX_CLI=https://www.linuxserver.io/
+    security_opt:
+      - seccomp=unconfined
+    ports:
+      - "4000:3000"
+      - "4001:3001"
+    shm_size: 1gb
+    restart: unless-stopped
+networks:
+  firefox_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.31.0.0/24

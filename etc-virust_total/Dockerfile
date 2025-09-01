@@ -8,7 +8,7 @@ RUN mkdir -p /app/logs
 WORKDIR /app
 
 # Install necessary libraries
-RUN pip install python-dotenv requests mysql-connector-python
+RUN pip install --no-cache-dir requests python-dotenv mysql-connector-python Flask
 
 # Copy the script
 COPY main.py .

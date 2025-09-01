@@ -16,13 +16,21 @@ services:
   virustotal_scanner:
     build: .
     container_name: virustotal_scanner
+    ports:
+      - "5000:5000"
+    restart: unless-stopped
     volumes:
       - ./var-virustotal_logs:/app/logs
     networks:
       - mysql_network
     depends_on:
       - mysqldb
-    restart: "no"
+    environment:
+      MYSQL_HOST: "${MYSQL_HOST}"
+      MYSQL_USER: "${MYSQL_USER}"
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD}"
+      MYSQL_DATABASE: "${MYSQL_DATABASE}"
+      VIRUSTOTAL_API_KEY: "${VIRUSTOTAL_API_KEY}"
 
 networks:
   mysql_network:

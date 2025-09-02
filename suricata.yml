@@ -1,0 +1,14 @@
+services:
+  suricata:
+    image: jasonish/suricata:latest
+    container_name: suricata
+    hostname: suricata-home-network-guardian
+    network_mode: host
+    volumes:
+      - './etc-suricata:/etc/suricata'
+      - './var-log-suricata:/var/log/suricata'
+    cap_add:
+      - NET_ADMIN
+      - SYS_NICE
+    command: ["-c", "/etc/suricata/suricata.yaml", "-i", "eth0"]
+    restart: unless-stopped

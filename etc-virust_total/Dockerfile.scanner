@@ -1,0 +1,15 @@
+# Use the official Python base image
+FROM python:3.9-slim
+
+# Set the working directory
+WORKDIR /app
+
+# Install required packages
+RUN pip install pymysql requests python-dotenv
+
+# Copy the Python script and the .env file into the container
+COPY dns_scanner.py .
+COPY .env .
+
+# Define the default command to run the script
+CMD ["python", "dns_scanner.py"]

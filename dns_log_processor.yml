@@ -1,0 +1,19 @@
+services:
+  dns_log_processor:
+    build: .
+    container_name: dns_log_processor
+    restart: unless-stopped
+    networks:
+      - mysql_network
+    volumes:
+      - './var-log-passive-dns:/var/log/dns'
+    environment:
+      - MYSQL_HOST=${MYSQL_HOST}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+    command: python /app/dns_log_processor.py
+
+networks:
+  mysql_network:
+    external: true

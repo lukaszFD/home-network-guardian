@@ -11,8 +11,8 @@ WORKDIR /app
 RUN pip install --no-cache-dir requests python-dotenv mysql-connector-python Flask
 
 # Copy the script
-COPY main.py .
+COPY virus_total.py .
 COPY .env .
 
 # Define the default command to run
-CMD ["python", "main.py"]
+CMD ["python", "virus_total.py"]

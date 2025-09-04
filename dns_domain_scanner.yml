@@ -1,0 +1,21 @@
+services:
+  dns_domain_scanner:
+    build: 
+      context: .
+      dockerfile: Dockerfile.scanner
+    container_name: dns_domain_scanner
+    restart: "no" # Uruchamia się raz i kończy działanie
+    networks:
+      - mysql_network
+    depends_on:
+      - mysqldb
+      - virustotal_scanner
+    environment:
+      - MYSQL_HOST=${MYSQL_HOST}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+
+networks:
+  mysql_network:
+    external: true

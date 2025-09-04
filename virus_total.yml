@@ -13,8 +13,11 @@ services:
       - mysql_data:/var/lib/mysql
     networks:
       - mysql_network
+
   virustotal_scanner:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.virustotal
     container_name: virustotal_scanner
     ports:
       - "5000:5000"
@@ -31,6 +34,43 @@ services:
       MYSQL_PASSWORD: "${MYSQL_PASSWORD}"
       MYSQL_DATABASE: "${MYSQL_DATABASE}"
       VIRUSTOTAL_API_KEY: "${VIRUSTOTAL_API_KEY}"
+
+  dns_log_processor:
+    build:
+      context: .
+      dockerfile: Dockerfile.dns
+    container_name: dns_log_processor
+    restart: unless-stopped
+    networks:
+      - mysql_network
+    volumes:
+      - './var-log-passive-dns:/var/log/dns'
+    depends_on:
+      - mysqldb
+    environment:
+      - MYSQL_HOST=${MYSQL_HOST}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+    command: python /app/dns_log_processor.py
+    
+  dns_scanner:
+    build:
+      context: .
+      dockerfile: Dockerfile.scanner
+    container_name: dns_scanner
+    restart: unless-stopped
+    networks:
+      - mysql_network
+    depends_on:
+      - mysqldb
+      - virustotal_scanner
+    environment:
+      MYSQL_HOST: "${MYSQL_HOST}"
+      MYSQL_USER: "${MYSQL_USER}"
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD}"
+      MYSQL_DATABASE: "${MYSQL_DATABASE}"
+    command: python /app/dns_scanner.py
 
 networks:
   mysql_network:

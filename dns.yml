@@ -1,0 +1,48 @@
+Dobrze, rozumiem. Przygotowałem bardziej rozbudowaną analizę, która zawiera więcej szczegółów i kontekstu, a także dokładniej opisuje poszczególne etapy projektu. Całość jest wciąż w formacie tekstowym, łatwym do skopiowania.
+​Analiza i plan migracji aplikacji Apex "PRET" do standardowej bazy Oracle
+​1. Wprowadzenie i Cel Projektu
+​Celem niniejszej analizy jest stworzenie szczegółowego planu migracji krytycznej aplikacji biznesowej "PRET" z platformy Oracle Apex do dedykowanej, standardowej bazy danych Oracle. Kluczowym czynnikiem jest termin wygaśnięcia wsparcia dla używanego pluginu Apex, który przypada na listopad przyszłego roku. Pomyślne przeprowadzenie tej migracji jest niezbędne do zapewnienia ciągłości działania aplikacji i jej integracji z istniejącym ekosystemem biznesowym.
+​2. Ocena Środowiska i Stanu Wyjściowego
+​Aplikacja źródłowa: "PRET" działa w środowisku Apex na serwerze, który musi zostać zdekomisjowany. Aplikacja ta posiada szereg tabel, procedur i funkcji, które należy zidentyfikować, przeanalizować i przenieść.
+​Środowisko docelowe: Nowy serwer, na którym znajduje się już inna kluczowa aplikacja "ARRT". To środowisko jest już dojrzałe, posiada zaimplementowane warstwy API (REST i GraphQL) oraz jednolity interfejs użytkownika (UI) w postaci Service Bench. Kluczową informacją jest brak na tym serwerze dedykowanych schematów i tablespace'ów dla "PRET", co wymaga ich utworzenia.
+​Integracja z systemem: Zdecydowano, że "PRET" nie będzie samodzielną aplikacją, lecz zostanie zintegrowany z "ARRT". Oznacza to, że nowa funkcjonalność będzie dostępna poprzez API aplikacji "ARRT", a następnie udostępniana w UI Service Bench.
+​3. Kluczowe Etapy Projektu
+​3.1 Faza Analityczna i Decyzyjna (MVP1)
+​Ta faza skupia się na ocenie opcji i przygotowaniu środowiska.
+​Współpraca z Apex Team: Głównym punktem tej fazy jest konsultacja z zespołem Apex w celu ustalenia możliwości migracji. Istnieją dwie opcje:
+​Przeniesienie całej bazy danych: Szybsze, ale ryzykowne, wymagające bliskiej współpracy z administratorami baz danych (DBA).
+​Migracja obiektów (obiekt po obiekcie): Bardziej pracochłonna, ale dająca większą kontrolę i minimalizująca ryzyko błędów w transferze danych i struktury. Jest to jedyna pewna opcja, jeśli przeniesienie całej bazy okaże się niemożliwe.
+​Przygotowanie infrastruktury:
+​Na obu serwerach (starym i nowym) zostaną utworzone konta non-interactive, które będą używane w API.
+​Konta te zostaną zintegrowane z HashiCorp Vault dla bezpiecznego przechowywania danych uwierzytelniających.
+​Konta te otrzymają pełne uprawnienia do operacji INSERT, DELETE i UPDATE w schemacie "PRET".
+​Na nowym serwerze zostaną utworzone dedykowane schematy i tablespace'y dla aplikacji "PRET", co jest warunkiem koniecznym do rozpoczęcia dalszych prac.
+​3.2 Faza Implementacyjna (MVP2)
+​Ten etap koncentruje się na technicznym przeniesieniu i integracji.
+​Migracja obiektów: Przy ścisłej współpracy z zespołem Apex, wszystkie obiekty bazy danych (tabele, procedury, pakiety, funkcje) zostaną przeniesione na nowy serwer. Należy dokładnie odwzorować ich strukturę i zależności.
+​Implementacja API: Istniejące warstwy API w aplikacji "ARRT" (REST i GraphQL) zostaną rozszerzone o logikę biznesową, która będzie odwoływać się do nowo przeniesionych obiektów z "PRET".
+​3.3 Faza Wdrożenia i Uruchomienia (MVP3)
+​Ostatni etap dotyczy finalnego uruchomienia i dostarczenia funkcjonalności użytkownikom.
+​Rozwój UI: Interfejs Service Bench zostanie zaktualizowany. Zostanie dodany przycisk, który umożliwi przełączanie się między widokiem "ARRT" a widokiem "PRET".
+​Synchronizacja funkcjonalności UI: Wszystkie kluczowe funkcjonalności UI, takie jak filtrowanie, wyświetlanie danych oraz operacje uploadu i downloadu, zostaną zaimplementowane w taki sam sposób dla aplikacji "PRET" jak dla "ARRT".
+​Ładowanie Danych: Dane z istniejącej bazy "PRET" zostaną przeniesione na nową bazę. Mamy dwie opcje do wyboru:
+​Metoda UI: Zaimplementowanie w UI funkcji uploadu, która umożliwi ręczne wgranie danych do sześciu kluczowych tabel.
+​Metoda ETL: Wykorzystanie naszego istniejącego, spersonalizowanego narzędzia ETL. To podejście wymagałoby zmiany connection stringów w narzędziu oraz dodania logiki do ładowania sześciu nowych tabel. Wybór tej metody zależy od złożoności danych i preferencji zespołu.
+​4. Ryzyka i Wyzwania
+​Wysoki nakład pracy: Projekt jest złożony i może wymagać znacznych zasobów, zwłaszcza w przypadku migracji obiekt po obiekcie.
+​Zależność od zespołu Apex: Skuteczność migracji zależy w dużym stopniu od dostępności i wsparcia zespołu Apex w procesie przenoszenia obiektów.
+​Brak infrastruktury początkowej: Konieczność tworzenia schematów i tablespace'ów na nowym serwerze na samym początku projektu może opóźnić prace. Z tego powodu część prac będzie musiała być prowadzona równolegle, na starym i nowym środowisku
+
+
+Przeniesienie całej bazy danych z instancji Apex na serwer, na którym Apex nie będzie, jest złożonym zadaniem. Najważniejsze problemy i wyzwania, z którymi trzeba się liczyć, dotyczą zarówno technologii, jak i logistyki.
+​Problemy techniczne
+​Zależności Apex: Aplikacje Apex są silnie powiązane z metadanymi i obiektami, które są tworzone i zarządzane przez samą platformę. Te obiekty nie są standardowymi tabelami czy procedurami, lecz specyficznymi dla Apex. Próba przeniesienia ich bez Apex na docelowym serwerze może zakończyć się niepowodzeniem. Po prostu, bez warstwy Apex, baza danych nie będzie w stanie ich "zrozumieć" i poprawnie przetwarzać.
+​Identyfikatory aplikacji i komponentów: Apex używa unikalnych identyfikatorów do zarządzania aplikacjami, stronami i komponentami. Bez platformy Apex na nowym serwerze, te identyfikatory stracą swój kontekst, co uniemożliwi uruchomienie interfejsu użytkownika i logiki biznesowej, ponieważ nie będzie do czego się odwołać.
+​Logika biznesowa wbudowana w Apex: Część logiki biznesowej aplikacji "PRET" może być zaimplementowana bezpośrednio w komponentach Apex, takich jak walidacje, procesy dynamiczne czy regiony. Taka logika nie istnieje w formie standardowego kodu PL/SQL w bazie danych. Przeniesienie samej bazy nie przeniesie tej logiki, więc trzeba będzie ją odtworzyć od zera w nowym środowisku, na przykład w formie procedur, funkcji lub kodu API.
+​Brak wbudowanych narzędzi do eksportu: Apex nie ma wbudowanego narzędzia, które pozwoliłoby na wyeksportowanie całej aplikacji jako samodzielnego projektu, niezależnego od platformy. Narzędzia do eksportu służą do przenoszenia aplikacji między instancjami Apex, a nie do wyodrębniania samej logiki biznesowej.
+​Problemy organizacyjne
+​Konieczność odtworzenia schematu od zera: Ponieważ nie można po prostu "wypiąć" bazy z Apex, jedyną możliwością jest przenoszenie obiektów (tabel, widoków, procedur) jeden po drugim. To wymaga szczegółowej analizy i dokumentacji istniejącej bazy danych. Konieczne jest również utworzenie schematów i tablespace'ów na nowym serwerze.
+​Dodatkowy nakład pracy: Nawet jeśli uda się zidentyfikować i przenieść wszystkie standardowe obiekty bazy danych, trzeba będzie ręcznie odtworzyć całą logikę biznesową, która była wbudowana w Apex. To oznacza dużo dodatkowej pracy dla zespołu deweloperskiego.
+​Wyzwania w synchronizacji z zespołem Apex: Migracja wymaga ścisłej współpracy z zespołem Apex. Ponieważ to oni najlepiej znają strukturę i zależności aplikacji, bez ich zaangażowania proces może stać się bardzo ryzykowny.
+​Ryzyko błędów: Przenoszenie danych i kodu ręcznie zwiększa ryzyko wystąpienia błędów. Złe mapowanie danych, pominięcie zależności czy błędne przepisanie logiki biznesowej mogą prowadzić do poważnych problemów w działaniu aplikacji.
+​Podsumowując, przeniesienie całej bazy danych z instancji Apex na serwer bez Apex jest w praktyce niemożliwe. Najlepszym i jedynym pewnym podejściem jest migracja obiekt po obiekcie oraz ręczne odtworzenie logiki biznesowej, która była zaszyta w platformie Ape

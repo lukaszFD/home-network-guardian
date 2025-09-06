@@ -1,5 +1,5 @@
 CREATE DATABASE virus_total;
-CREATE USER 'hunter'@'%' IDENTIFIED BY 'lfd1984';
+CREATE USER 'hunter'@'%' IDENTIFIED BY '';
 GRANT ALL PRIVILEGES ON virus_total.* TO 'hunter'@'%';
 FLUSH PRIVILEGES;
 
@@ -26,11 +26,6 @@ CREATE TABLE IF NOT EXISTS file_scans (
     UNIQUE KEY (sha256)
 );
 
-CREATE DATABASE dns_logs;
-CREATE USER 'hunter'@'%' IDENTIFIED BY 'lfd1984';
-GRANT ALL PRIVILEGES ON dns_logs.* TO 'hunter'@'%';
-FLUSH PRIVILEGES;
-
 CREATE TABLE `dns_queries` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `timestamp` DATETIME NOT NULL,
@@ -41,3 +36,17 @@ CREATE TABLE `dns_queries` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_dns_entry` (`domain`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE OR REPLACE VIEW virus_total.v_dns_queries AS
+SELECT
+    dq.id,
+    dq.timestamp,
+    dq.query_type,
+    dq.domain,
+    dq.source_ip,
+    dq.response_ip
+FROM virus_total.dns_queries dq
+LEFT JOIN virus_total.url_scans us ON dq.domain = us.url COLLATE utf8mb4_0900_ai_ci
+WHERE
+    us.url IS NULL
+    AND dq.response_ip REGEXP '^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$';

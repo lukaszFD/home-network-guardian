@@ -1,4 +1,4 @@
-# Dockerfile
+# Dockerfile.passive_dns
 FROM python:3.9-slim
 
 # Create a directory for logs

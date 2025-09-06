@@ -32,23 +32,10 @@ def is_valid_domain(domain):
         return False
     return True
 
-def url_exists(conn, url):
-    """
-    Checks if a URL already exists in the url_scans table.
-    """
-    try:
-        cursor = conn.cursor()
-        query = "SELECT EXISTS(SELECT 1 FROM url_scans WHERE url = %s LIMIT 1)"
-        cursor.execute(query, (url,))
-        result = cursor.fetchone()[0]
-        cursor.close()
-        return result == 1
-    except Exception as e:
-        print(f"Error checking if URL exists: {e}")
-        return False
-
 def get_domains_from_db():
-    """Fetches domains from the dns_queries table."""
+    """
+    Fetches domains from the v_dns_queries view.
+    """
     domains = []
     try:
         connection = pymysql.connect(
@@ -59,8 +46,8 @@ def get_domains_from_db():
             cursorclass=pymysql.cursors.DictCursor
         )
         with connection.cursor() as cursor:
-            # Query the database for domains
-            sql = "SELECT domain FROM dns_queries"
+            # Query the database for domains using the view
+            sql = "SELECT domain FROM v_dns_queries"
             cursor.execute(sql)
             result = cursor.fetchall()
             domains = [row['domain'] for row in result if is_valid_domain(row['domain'])]
@@ -72,7 +59,9 @@ def get_domains_from_db():
     return domains
 
 def scan_domain_with_virustotal(domain):
-    """Sends a domain to the VirusTotal scanner service."""
+    """
+    Sends a domain to the VirusTotal scanner service.
+    """
     try:
         data = {"url": domain}
         headers = {"Content-Type": "application/json"}
@@ -84,34 +73,12 @@ def scan_domain_with_virustotal(domain):
 
 if __name__ == "__main__":
     domains_to_scan = get_domains_from_db()
+
     if not domains_to_scan:
-        print("No valid domains found in the dns_queries database. Exiting.")
+        print("No valid domains found in the v_dns_queries view. Exiting.")
     else:
-        print(f"Found {len(domains_to_scan)} domains to check against url_scans table.")
-        
-        # Connect to the database again to check for existing URLs
-        try:
-            connection = pymysql.connect(
-                host=MYSQL_HOST,
-                user=MYSQL_USER,
-                password=MYSQL_PASSWORD,
-                database=MYSQL_DATABASE,
-                cursorclass=pymysql.cursors.DictCursor
-            )
-            
-            domains_to_process = [domain for domain in domains_to_scan if not url_exists(connection, domain)]
-            
-            if not domains_to_process:
-                print("All domains already exist in url_scans table. No new domains to scan.")
-            else:
-                print(f"Found {len(domains_to_process)} new domains to scan.")
-                for domain in domains_to_process:
-                    scan_domain_with_virustotal(domain)
-                    print("Waiting for 175 seconds to respect API rate limits... ")
-                    time.sleep(175)
-                    
-        except Exception as e:
-            print(f"An error occurred during database connection or processing: {e}")
-        finally:
-            if connection:
-                connection.close()
+        print(f"Found {len(domains_to_scan)} domains to scan.")
+        for domain in domains_to_scan:
+            scan_domain_with_virustotal(domain)
+            print("Waiting for 900 seconds to respect API rate limits... ")
+            time.sleep(900)

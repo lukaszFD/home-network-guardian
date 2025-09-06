@@ -17,7 +17,7 @@ services:
   virustotal_scanner:
     build:
       context: .
-      dockerfile: Dockerfile.passive_dns.virustotal
+      dockerfile: Dockerfile.virustotal
     container_name: virustotal_scanner
     ports:
       - "5000:5000"
@@ -38,7 +38,7 @@ services:
   dns_log_processor:
     build:
       context: .
-      dockerfile: Dockerfile.passive_dns.dns
+      dockerfile: Dockerfile.dns
     container_name: dns_log_processor
     restart: unless-stopped
     networks:
@@ -53,11 +53,11 @@ services:
       - MYSQL_PASSWORD=${MYSQL_PASSWORD}
       - MYSQL_DATABASE=${MYSQL_DATABASE}
     command: python /app/dns_log_processor.py
-    
+
   dns_scanner:
     build:
       context: .
-      dockerfile: Dockerfile.passive_dns.scanner
+      dockerfile: Dockerfile.scanner
     container_name: dns_scanner
     restart: unless-stopped
     networks:
@@ -74,9 +74,10 @@ services:
 
 networks:
   mysql_network:
-    external: true
+    driver: bridge
     ipam:
       config:
         - subnet: 172.61.0.0/24
+    external: true
 volumes:
   mysql_data:

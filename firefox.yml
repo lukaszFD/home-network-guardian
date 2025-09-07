@@ -10,6 +10,25 @@ services:
       - './etc-unbound-firefox/unbound.conf:/etc/unbound/unbound.conf'
     restart: unless-stopped
 
+  pihole:
+    image: pihole/pihole:latest
+    container_name: pihole_firefox
+    hostname: pihole_firefox
+    networks:
+      firefox_network:
+        ipv4_address: 172.31.0.4
+    environment:
+      TZ: "Europe/Warsaw"
+      PIHOLE_DNS_: "172.31.0.2#53"
+    volumes:
+      - './etc-pihole_firefox:/etc/pihole'
+      - './etc-dnsmasq_pihole_firefox:/etc/dnsmasq.d'
+    ports:
+      - "8088:80/tcp"
+    restart: unless-stopped
+    depends_on:
+      - unbound_firefox
+
   firefox:
     image: lscr.io/linuxserver/firefox:latest
     container_name: firefox
@@ -19,7 +38,7 @@ services:
     networks:
       firefox_network:
         ipv4_address: 172.31.0.3
-    dns: 172.31.0.2
+    dns: 172.31.0.4
     environment:
       - PUID=1000
       - PGID=1000
@@ -32,6 +51,7 @@ services:
       - "4001:3001"
     shm_size: 1gb
     restart: unless-stopped
+
 networks:
   firefox_network:
     driver: bridge

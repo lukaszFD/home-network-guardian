@@ -7,7 +7,7 @@ from virus_total.url_scans
 select *
 from virus_total.v_dns_queries
 
-select *
+select count(*)
 from virus_total.v_dns_queries
 order by id desc
 
@@ -19,7 +19,8 @@ select *
 from virus_total.url_scans
 order by id desc 
 
-select *
+--url, scan_date, positives,total_scans, permalink
+select url, scan_date, positives,total_scans, permalink
 from virus_total.url_scans
 where positives > 0 
 

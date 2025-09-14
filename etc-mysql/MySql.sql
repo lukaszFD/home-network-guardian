@@ -1,19 +1,17 @@
 select count(*)
 from virus_total.v_dns_queries
-
 select count(*)
-from virus_total.url_scans
+from virus_total.dns_queries
 
 select *
-from virus_total.v_dns_queries
-
-select count(*)
-from virus_total.v_dns_queries
-order by id desc
+from virus_total.dns_queries
 
 select *
 from virus_total.dns_queries
 where domain = 'spot-pa.googleapis.com'
+
+select count(*)
+from virus_total.url_scans
 
 select *
 from virus_total.url_scans

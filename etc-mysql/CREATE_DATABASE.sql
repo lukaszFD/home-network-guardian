@@ -1,0 +1,4 @@
+CREATE DATABASE virus_total;
+CREATE USER 'hunter'@'%' IDENTIFIED BY '';
+GRANT ALL PRIVILEGES ON virus_total.* TO 'hunter'@'%';
+FLUSH PRIVILEGES;

@@ -58,6 +58,8 @@ the image, which includes copying the new .env file into the container.
 
 sudo docker compose -f virus_total.yml -p virus_total-service build --no-cache virustotal_scanner
 
+sudo docker compose -f virus_total.yml -p virus_total-service up -d --force-recreate
+
 Step 2: Run the scanner from the newly built image.
 After the image is built, this command runs the scanner, passing the IP addresses
 to your script. The container will perform its task and then be removed (--rm).

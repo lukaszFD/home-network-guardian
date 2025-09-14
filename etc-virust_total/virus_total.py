@@ -110,7 +110,7 @@ def get_yara_rules_from_comments(sha256, api_key):
         response = requests.get(url, headers=headers)
         response.raise_for_status()
         comments_data = response.json()
-        
+
         for comment in comments_data.get("data", []):
             text = comment["attributes"].get("text", "")
             # Użycie wyrażeń regularnych do wyodrębnienia reguł YARA
@@ -161,17 +161,17 @@ def scan_url_endpoint():
         if "data" in data and "id" in data["data"]:
             analysis_id = data["data"]["id"]
             analysis_url = f"https://www.virustotal.com/api/v3/analyses/{analysis_id}"
-            
+
             # Polling for analysis result
             while True:
                 analysis_response = requests.get(analysis_url, headers=headers)
                 analysis_response.raise_for_status()
                 analysis_data = analysis_response.json()
-                
+
                 status = analysis_data["data"]["attributes"]["status"]
                 if status == "completed":
                     break
-                
+
                 # Wait for 10 seconds before polling again
                 import time
                 time.sleep(10)
@@ -180,8 +180,13 @@ def scan_url_endpoint():
             positives = sum(1 for result in results.values() if result["category"] == "malicious")
             total_scans = len(results)
             permalink = analysis_data["data"]["links"]["self"]
-            scan_result_json = json.dumps(analysis_data)
-            
+
+            # Conditional assignment based on positives count
+            if positives > 0:
+                scan_result_json = json.dumps(analysis_data)
+            else:
+                scan_result_json = None
+
             insert_url_scan_result(cursor, url_to_scan, positives, total_scans, permalink, scan_result_json)
             conn.commit()
             return jsonify({
@@ -245,28 +250,28 @@ def scan_file_endpoint():
         if "data" in data and "id" in data["data"]:
             analysis_id = data["data"]["id"]
             analysis_url = f"https://www.virustotal.com/api/v3/analyses/{analysis_id}"
-            
+
             # Polling for analysis result
             while True:
                 analysis_response = requests.get(analysis_url, headers=headers)
                 analysis_response.raise_for_status()
                 analysis_data = analysis_response.json()
-                
+
                 status = analysis_data["data"]["attributes"]["status"]
                 if status == "completed":
                     break
-                
+
                 import time
                 time.sleep(10)
 
             # Pobieranie reguł YARA
             yara_rules = []
-            
+
             # 1. Próba pobrania reguł z głównego obiektu pliku
             file_details = get_file_details_with_yara(file_hash, API_KEY)
             if file_details and "data" in file_details:
                 yara_rules.extend(file_details["data"]["attributes"].get("crowdsourced_yara_rules", []))
-            
+
             # 2. Jeśli brak reguł, próba pobrania z komentarzy
             if not yara_rules:
                 yara_rules.extend(get_yara_rules_from_comments(file_hash, API_KEY))
@@ -277,10 +282,10 @@ def scan_file_endpoint():
             permalink = analysis_data["data"]["links"]["self"]
 
             scan_result_json = json.dumps(analysis_data)
-            
+
             # Wstawienie wyniku skanowania do tabeli file_scans
             scan_id = insert_file_scan_result(cursor, file_hash, positives, total_scans, permalink, scan_result_json)
-            
+
             # Wstawienie reguł YARA do nowej tabeli
             if yara_rules and scan_id:
                 insert_yara_rules(cursor, scan_id, yara_rules)
@@ -323,7 +328,7 @@ def search_yara_rules():
     conn = connect_to_db()
     if conn is None:
         return jsonify({"error": "Cannot connect to database"}), 500
-    
+
     try:
         cursor = conn.cursor(dictionary=True)
         search_term = f"%{query}%"
@@ -335,9 +340,9 @@ def search_yara_rules():
         """
         cursor.execute(sql, (search_term, search_term, search_term))
         results = cursor.fetchall()
-        
+
         return jsonify(results), 200
-    
+
     except Exception as e:
         logging.error(f"An unexpected error occurred during search: {e}")
         return jsonify({"error": f"An unexpected error occurred: {e}"}), 500

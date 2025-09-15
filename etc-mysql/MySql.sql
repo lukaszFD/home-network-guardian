@@ -22,4 +22,14 @@ select url, scan_date, positives,total_scans, permalink
 from virus_total.url_scans
 where positives > 0 
 
+select *
+from virus_total.v_dns_queries
 
+select *
+from virus_total.v_malicious_url_scans 
+
+select *
+from virus_total.v_non_ipv4_response_ips 
+
+select *
+from virus_total.v_malicious_url_detailed_scans

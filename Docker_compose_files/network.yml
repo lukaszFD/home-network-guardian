@@ -35,7 +35,9 @@ services:
       - unbound
       
   passive_dns:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.pdns
     container_name: passive_dns
     hostname: passive_dns
     networks:
@@ -89,7 +91,3 @@ networks:
     ipam:
       config:
         - subnet: 172.40.0.0/24
-
-volumes:
-  loki_data:
-  

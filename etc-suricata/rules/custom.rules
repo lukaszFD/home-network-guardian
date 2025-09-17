@@ -22,8 +22,6 @@ alert tcp any any -> $HOME_NET 22 (msg:"SSH brute-force attempt"; flags:S; thres
 # ----------- 6. Detect DNS Tunneling (Data Exfiltration via DNS) -----------
 alert udp any any -> any 53 (msg:"Possible DNS tunneling detected"; dsize:>200; sid:1000006; rev:1;)
 
-alert dns any any -> any any (msg:"DNS Query Detected"; dns.type; dns.query.type; dns.rrname; sid:1000012; rev:1;)
-
 # ----------- 7. Detect Possible SQL Injection in HTTP Requests -----------
 alert http any any -> $HOME_NET any (msg:"Possible SQL Injection"; content:"select "; nocase; http_uri; sid:1000007; rev:1;)
 alert http any any -> $HOME_NET any (msg:"Possible SQL Injection"; content:"union "; nocase; http_uri; sid:1000008; rev:1;)
@@ -36,3 +34,5 @@ alert icmp any any -> $HOME_NET any (msg:"Possible Ping of Death attack detected
 
 # ----------- 10. Detect Fragmented ICMP Packets (Possible Evasion or PoD Attack) -----------
 alert ip any any -> $HOME_NET any (msg:"Fragmented ICMP packet - Possible Ping of Death"; fragbits:M; sid:1000011; rev:1;)
+
+alert dns any any -> any any (msg:"Generic DNS Query Detected"; dns.type; sid:1000012; rev:1;)

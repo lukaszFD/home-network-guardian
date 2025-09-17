@@ -51,17 +51,17 @@ sudo docker compose up -d --force-recreate pihole
 
 
 #########################################################################################################
-Purpose: Build and run the VirusTotal scanner after changing the .env file.
-Step 1: Build the container image with the new configuration, ignoring cache.
-This command is crucial after changing the .env file. It forces Docker to rebuild
-the image, which includes copying the new .env file into the container.
+#Purpose: Build and run the VirusTotal scanner after changing the .env file.
+#Step 1: Build the container image with the new configuration, ignoring cache.
+#This command is crucial after changing the .env file. It forces Docker to rebuild
+#the image, which includes copying the new .env file into the container.
 
-sudo docker compose -f virus_total.yml -p virus_total-service build --no-cache virustotal_scanner
+sudo docker compose -f network.yml -p network-service build --no-cache
 
-sudo docker compose -f virus_total.yml -p virus_total-service up -d --force-recreate
+sudo docker compose -f network.yml -p network-service up -d --force-recreate
 
-Step 2: Run the scanner from the newly built image.
-After the image is built, this command runs the scanner, passing the IP addresses
-to your script. The container will perform its task and then be removed (--rm).
+#Step 2: Run the scanner from the newly built image.
+#After the image is built, this command runs the scanner, passing the IP addresses
+#to your script. The container will perform its task and then be removed (--rm).
 
 sudo docker compose -f virus_total.yml -p virus_total-service run --rm virustotal_scanner python main.py 129.134.31.12

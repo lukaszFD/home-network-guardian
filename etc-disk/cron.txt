@@ -1,1 +1,4 @@
 (crontab -l 2>/dev/null; echo "0 * * * * $HOME/etc-disk/monitor_disk_usage.sh") | crontab -
+
+##run
+$HOME/etc-disk/monitor_disk_usage.sh

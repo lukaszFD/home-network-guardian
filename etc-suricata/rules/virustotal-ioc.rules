@@ -1,0 +1,38 @@
+# =========================================================================
+# Suricata Rules for Malicious DNS Queries
+# Source: Manually compiled from VirusTotal data as of 2025-09-17
+# Description: This file contains rules to detect DNS queries to known
+#              malicious domains, based on Indicators of Compromise (IoCs).
+# =========================================================================
+
+# --- IoCs from VirusTotal results ---
+
+# Rule for '303.consent-pref.trustarc.com'
+alert dns any any -> any 53 (msg:"ET CTI Malicious DNS Query - 303.consent-pref.trustarc.com"; dns_query; content:"|03|303|0b|consent-pref|07|trustarc|03|com|00|"; nocase; sid:1000009; rev:1;)
+
+# Rule for 'prod.detectportal.prod.cloudops.wozpqci.net'
+alert dns any any -> any 53 (msg:"ET CTI Malicious DNS Query - prod.detectportal.prod.cloudops.wozpqci.net"; dns_query; content:"|04|prod|0c|detectportal|04|prod|09|cloudops|06|wozpqci|03|net|00|"; nocase; sid:1000010; rev:1;)
+
+# Rule for 'storage.googleapis.com'
+alert dns any any -> any 53 (msg:"ET CTI Suspicious DNS Query - storage.googleapis.com"; dns_query; content:"|07|storage|0a|googleapis|03|com|00|"; nocase; sid:1000011; rev:1;)
+
+# Rule for '60f6.ipv4-c020-vaw002-orangeapi-1.lca.nff1vixiden.net'
+alert dns any any -> any 53 (msg:"ET CTI Malicious DNS Query - 60f6.ipv4-c020-vaw002-orangeapi-1.lca.nff1vixiden.net"; dns_query; content:"|04|60f6|04|ipv4|04|c020|05|vaw002|0a|orangeapi-1|03|lca|0a|nff1vixiden|03|net|00|"; nocase; sid:1000012; rev:1;)
+
+# Rule for '75f8.ipv4-c003-r03002-orangeapi-1.lca.nff1vixiden.net'
+alert dns any any -> any 53 (msg:"ET CTI Malicious DNS Query - 75f8.ipv4-c003-r03002-orangeapi-1.lca.nff1vixiden.net"; dns_query; content:"|04|75f8|04|ipv4|04|c003|05|r03002|0a|orangeapi-1|03|lca|0a|nff1vixiden|03|net|00|"; nocase; sid:1000013; rev:1;)
+
+# Rule for '80712.vtimq.com'
+alert dns any any -> any 53 (msg:"ET CTI Malicious DNS Query - 80712.vtimq.com"; dns_query; content:"|05|80712|05|vtimq|03|com|00|"; nocase; sid:1000014; rev:1;)
+
+# Rule for '63f6.ipv6-g028-lan039-1.lca.nff1vixiden.net'
+alert dns any any -> any 53 (msg:"ET CTI Malicious DNS Query - 63f6.ipv6-g028-lan039-1.lca.nff1vixiden.net"; dns_query; content:"|04|63f6|04|ipv6|04|g028|06|lan039-1|03|lca|0a|nff1vixiden|03|net|00|"; nocase; sid:1000015; rev:1;)
+
+# Rule for '63f6.ipv6-g0d8-arn05-1.lca.nff1vixiden.net'
+alert dns any any -> any 53 (msg:"ET CTI Malicious DNS Query - 63f6.ipv6-g0d8-arn05-1.lca.nff1vixiden.net"; dns_query; content:"|04|63f6|04|ipv6|04|g0d8|05|arn05-1|03|lca|0a|nff1vixiden|03|net|00|"; nocase; sid:1000016; rev:1;)
+
+# Rule for '1520.dns-tunnel-check.googlezip.com'
+alert dns any any -> any 53 (msg:"ET CTI Malicious DNS Query - Possible DNS Tunneling - 1520.dns-tunnel-check.googlezip.com"; dns_query; content:"|04|1520|0f|dns-tunnel-check|09|googlezip|03|com|00|"; nocase; sid:1000017; rev:1;)
+
+# Rule for '1530.firebase-storage.googleapis.com'
+alert dns any any -> any 53 (msg:"ET CTI Suspicious DNS Query - 1530.firebase-storage.googleapis.com"; dns_query; content:"|04|1530|0e|firebase-storage|0a|googleapis|03|com|00|"; nocase; sid:1000018; rev:1;)

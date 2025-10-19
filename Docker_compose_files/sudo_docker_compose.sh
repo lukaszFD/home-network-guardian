@@ -56,9 +56,14 @@ sudo docker compose up -d --force-recreate pihole
 #This command is crucial after changing the .env file. It forces Docker to rebuild
 #the image, which includes copying the new .env file into the container.
 
-sudo docker compose -f network.yml -p network-service build --no-cache
+sudo docker compose -f firefox.yml -p firefox-service build --no-cache
 
-sudo docker compose -f network.yml -p network-service up -d --force-recreate
+sudo docker compose -f firefox.yml -p firefox-service up -d --force-recreate
+
+sudo docker stop librewolf
+sudo docker rm librewolf
+udo docker rmi lscr.io/linuxserver/librewolf:latest
+
 
 #Step 2: Run the scanner from the newly built image.
 #After the image is built, this command runs the scanner, passing the IP addresses

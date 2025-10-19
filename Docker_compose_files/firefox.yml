@@ -49,7 +49,7 @@ services:
     ports:
       - "4000:3000"
       - "4001:3001"
-    shm_size: 1gb
+    shm_size: 2gb
     restart: unless-stopped
 
 networks:

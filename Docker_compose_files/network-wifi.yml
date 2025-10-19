@@ -1,0 +1,56 @@
+services:
+  unbound:
+    image: klutchell/unbound:latest
+    container_name: unbound
+    hostname: unbound
+    networks:
+      internal_network:
+        ipv4_address: 172.1.0.2
+    volumes:
+      - './etc-unbound-wifi/unbound.conf:/etc/unbound/unbound.conf'
+    restart: unless-stopped
+
+  pihole:
+    image: pihole/pihole:latest
+    container_name: pihole
+    hostname: pihole
+    networks:
+      internal_network:
+        ipv4_address: 172.1.0.3
+    environment:
+      TZ: "${TZ}"
+      PIHOLE_DNS_: "172.1.0.5#53"
+    volumes:
+      - './etc-pihole-wifi:/etc/pihole'
+      - './etc-dnsmasq-wifi:/etc/dnsmasq.d'
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "80:80/tcp"
+      - "443:443/tcp"
+    restart: unless-stopped
+    depends_on:
+      - unbound
+
+  suricata:
+    image: jasonish/suricata:latest
+    container_name: suricata
+    hostname: suricata-home-network-guardian
+    networks:
+      internal_network:
+        ipv4_address: 172.1.0.4
+    volumes:
+      - './etc-suricata-wifi:/etc/suricata'
+      - './var-log-suricata-wifi:/var/log/suricata'
+    cap_add:
+      - NET_ADMIN
+      - SYS_NICE
+    command: ["-c", "/etc/suricata/suricata.yaml", "-i", "eth0"]
+    restart: unless-stopped
+
+networks:
+  internal_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.1.0.0/24

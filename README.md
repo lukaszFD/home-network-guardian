@@ -1,7 +1,6 @@
 # Repository Structure
 
 This repository contains all configuration files, scripts, and templates required for the deployment of the **Home Network Guardian** stack on a Raspberry Pi (or compatible host) using Docker Compose. The structure has been organized for better clarity and automation readiness, particularly for use with Ansible.
-
 ---
 
 ## Directories

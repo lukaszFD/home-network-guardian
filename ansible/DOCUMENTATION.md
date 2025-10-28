@@ -1,48 +1,17 @@
 # Home Network Guardian - Ansible Deployment Documentation
 
-## 1. Project Directory Structure and Configuration
-
-This section describes the repository structure, which is organized for clear separation between configuration files and deployment orchestration files.
-
-### 1.1 Configuration Directory: `config/` (Source: Local Repository)
-
-This directory holds all persistent and service-specific configuration files, scripts, and database schema definitions. These files are designed to be mounted as Docker volumes inside the respective containers.
-
-| Directory | Content / Key Files | Role |
-| :--- | :--- | :--- |
-| **etc-filebeat/** | `filebeat.yml` | Filebeat config for collecting logs and forwarding them to a central SIEM/logging system. |
-| **etc-grafana/** | Dashboard JSONs | Grafana provisioning files and monitoring dashboards. |
-| **etc-pihole/** | `adlists`, `setupVars.conf` | Persistent and custom configuration for the Pi-hole DNS server. |
-| **etc-suricata/** | `suricata.yaml`, `rules/` | Suricata IDS rules and configuration for network intrusion detection and alerting. |
-| **etc-prometheus/** | `prometheus.yml` | Configuration for the Prometheus monitoring stack. |
-| **etc-squid/** | `squid.conf` | Main Squid proxy configuration and access rules. |
-| **etc-unbound/** | `unbound.conf` | Primary Unbound DNS resolver configuration. |
-| **etc-unbound-firefox/** | `unbound.conf` | Dedicated Unbound configuration for the isolated Firefox container. |
-| **etc-samba/** | `smb.conf` | Samba (SMB) service configuration for network shares. |
-| **etc-squid-tabl/** | Auxiliary ACL tables | Additional Squid access rule files for granular web filtering. |
-
-### 1.2 Deployment and Utility Files (Source: Local Repository)
-
-| File / Directory | Role |
-| :--- | :--- |
-| **docker-compose.yml** | Main configuration file defining all containers, networks, and links between services. |
-| **.env** | Environment variables for secrets, passwords, and network ranges (recommended to move secrets to **Vault**). |
-| **create_configs.sh** | Shell script to automate the initial creation of configuration files and directories. |
-
----
-
-## 2. Ansible Controller Setup and Working Environment
+## 1. Ansible Controller Setup and Working Environment
 
 This section documents the initial steps executed on the Ansible Controller (`ansible@ansible:~`) to prepare the deployment environment.
 
-### 2.1 Environment Setup
+### 1.1 Environment Setup
 
 | Action | Command | Purpose |
 | :--- | :--- | :--- |
 | **Create venv** | `python3 -m venv ~/ansible_venv` | Isolates Python dependencies for Ansible. |
 | **Activate venv** | `source ~/ansible_venv/bin/activate` | Activates the isolated environment. |
 
-### 2.2 Project Directory Structure
+### 1.2 Project Directory Structure
 
 | Directory | Command | Role in Deployment |
 | :--- | :--- | :--- |
@@ -52,18 +21,18 @@ This section documents the initial steps executed on the Ansible Controller (`an
 
 ---
 
-## 3. Test Deployment: Portainer Service
+## 2. Test Deployment: Portainer Service
 
 The following steps document the execution of the first test playbook (`deploy-portainer.yml`), demonstrating the orchestration of Docker Compose on a remote node.
 
-### 3.1 Playbook Execution
+### 2.1 Playbook Execution
 
 | Action | Command | Outcome / Context |
 | :--- | :--- | :--- |
 | **Change Directory** | `cd ansible_home_guardian` | Sets the correct working directory for the playbook. |
 | **Execute Playbook** | `ansible-playbook -i ../hosts.ini deploy-portainer.yml` | Executes the playbook logic: copies the Docker Compose file to the remote node, changes the working directory, and runs the `docker compose` command. |
 
-### 3.2 `deploy-portainer.yml` Logic Summary (English)
+### 2.2 `deploy-portainer.yml` Logic Summary (English)
 
 The playbook ensures the deployment is idempotent and uses the required `sudo docker compose` command:
 

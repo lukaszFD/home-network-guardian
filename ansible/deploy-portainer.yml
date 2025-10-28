@@ -1,0 +1,61 @@
+---
+# Playbook to deploy Portainer Service with custom project name and sudo.
+- name: 01 - Deploy Portainer Service with custom command
+  hosts: home_guardian_servers # Targets RPi 4B and RPi 5
+  become: yes # Use 'sudo' for tasks where necessary
+
+  vars:
+    source_docker_file: "docker-compose-portainer.yml"
+    source_path: "/home/ansible/home-network-guardian-files"
+    remote_deploy_base: "/opt/guardian_deployment"
+    # We use the username from hosts.ini for security,
+    # but the deployment will be executed with 'become: yes' (sudo)
+    deployment_user: "{{ ansible_user }}"
+    project_name: "portainer-service"
+
+  tasks:
+    # --- PREPARATION OF THE REMOTE NODE (RPi 5) ---
+
+    - name: Task 1.0 - Create base deployment directory on the remote node (RPi 5)
+      ansible.builtin.file:
+        path: "{{ remote_deploy_base }}"
+        state: directory
+        owner: "{{ deployment_user }}"
+        group: "{{ deployment_user }}"
+        mode: '0755'
+      when: inventory_hostname != 'pi4b' # Only run this on the remote node (RPi 5)
+
+    - name: Task 1.1 - Copy the Docker Compose file to the remote node (RPi 5)
+      ansible.builtin.copy:
+        src: "{{ source_path }}/{{ source_docker_file }}"
+        dest: "{{ remote_deploy_base }}/{{ source_docker_file }}"
+        owner: "{{ deployment_user }}"
+        group: "{{ deployment_user }}"
+        mode: '0644'
+      when: inventory_hostname != 'pi4b'
+
+    # --- SETTING UP THE WORKING PATH ---
+
+    - name: Task 2.0 - Define working directory based on host
+      ansible.builtin.set_fact:
+        # If it's RPi 4B, the file is already local at source_path.
+        # If it's RPi 5, we use remote_deploy_base.
+        workdir_path: "{{ source_path if inventory_hostname == 'pi4b' else remote_deploy_base }}"
+
+    # --- DEPLOYING THE DOCKER SERVICE ---
+
+    - name: Task 3.0 - Deploy service using 'sudo docker compose -p' command
+      ansible.builtin.shell:
+        cmd: "docker compose -f {{ source_docker_file }} -p {{ project_name }} up -d"
+        chdir: "{{ workdir_path }}"
+      # We use 'become: yes' at the playbook level, which corresponds to using 'sudo'
+      # We could add 'become_user: root' if we wanted to explicitly force root,
+      # but 'become: yes' at the play level (defaulting to root) is sufficient for 'sudo docker compose'.
+      register: deploy_output
+
+    - name: Task 3.1 - Display deployment status and Portainer URL
+      ansible.builtin.debug:
+        msg: |
+          Deployment of Portainer on {{ inventory_hostname }} finished.
+          Portainer should be available at http://{{ ansible_host }}:9010 (based on your docker-compose file).
+          Output: {{ deploy_output.stdout }}

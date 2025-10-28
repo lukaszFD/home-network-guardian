@@ -1,16 +1,29 @@
-ansible@ansible:~ $ python3 -m venv ~/ansible_venv
-ansible@ansible:~ $ source ~/ansible_venv/bin/activate
+(ansible_venv) ansible@ansible:~/ansible_home_guardian $ ansible-playbook -i ../hosts.ini deploy-portainer.yml
 
-# Create the main Ansible project directory (if not already done)
-mkdir -p ~/ansible_home_guardian
+PLAY [01 - Deploy Portainer Service with custom command] *************************************************************************************************
 
-# Create the directory to hold the Docker files (Dockerfile, docker-compose.yml)
-mkdir -p ~/home-network-guardian-files
+TASK [Gathering Facts] ***********************************************************************************************************************************
+ok: [pi5]
 
-(ansible_venv) ansible@ansible:~ $ ls -l
-total 16
-drwxrwxr-x 2 ansible ansible 4096 Oct 27 20:39 ansible_home_guardian
-drwxrwxr-x 5 ansible ansible 4096 Oct 27 20:32 ansible_venv
-drwxrwxr-x 2 ansible ansible 4096 Oct 27 20:39 home-network-guardian-files
--rw-rw-r-- 1 ansible ansible  241 Oct 27 20:10 hosts.ini
-(ansible_venv) ansible@ansible:~ $ nano hosts.ini
+TASK [Task 1.0 - Create base deployment directory on the remote node (RPi 5)] ****************************************************************************
+changed: [pi5]
+
+TASK [Task 1.1 - Copy the Docker Compose file to the remote node (RPi 5)] ********************************************************************************
+changed: [pi5]
+
+TASK [Task 2.0 - Define working directory based on host] *************************************************************************************************
+ok: [pi5]
+
+TASK [Task 3.0 - Deploy service using 'sudo docker compose -p' command] **********************************************************************************
+changed: [pi5]
+
+TASK [Task 3.1 - Display deployment status and Portainer URL] ********************************************************************************************
+ok: [pi5] => {
+    "msg": "Deployment of Portainer on pi5 finished.\nPortainer should be available at http://192.168.1.5:9010 (based on your docker-compose file).\nOutput: \n"
+}
+
+PLAY RECAP ***********************************************************************************************************************************************
+pi5                        : ok=6    changed=3    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+
+(ansible_venv) ansible@ansible:~/ansible_home_guardian $
+

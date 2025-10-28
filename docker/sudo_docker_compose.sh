@@ -16,7 +16,7 @@ sudo docker compose -f portainer.yml -p portainer-service up -d
 sudo docker compose -f pi_alert.yml -p pialert-service up -d
 
 # Example 3: Starts a Firefox stack using 'firefox.yml' and names the project 'firefox-service'.
-sudo docker compose -f firefox.yml -p firefox-service up -d
+sudo docker compose -f docker-compose-portainer.yml -p portainer-service up -d
 
 # Example 4: Starts a Samba stack using 'samba.yml' and names the project 'samba-service'.
 sudo docker compose -f samba.yml -p samba-service up -d

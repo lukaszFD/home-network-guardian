@@ -5,11 +5,15 @@
   become: yes # Use 'sudo' for tasks where necessary
 
   vars:
-    source_docker_file: "docker-compose-portainer.yml"
-    source_path: "/home/ansible/home-network-guardian-files"
-    remote_deploy_base: "/opt/guardian_deployment"
-    # We use the username from hosts.ini for security,
-    # but the deployment will be executed with 'become: yes' (sudo)
+    # ZMIANA: Ścieżka do FOLDERU, gdzie znajduje się plik Docker Compose na kontrolerze (Linux Mint)
+    docker_compose_source_dir: "/home/hunter/IdeaProjects/home-network-guardian/docker"
+    # ZMIANA: Nazwa pliku do skopiowania
+    docker_compose_file_name: "docker-compose-portainer.yml"
+
+    # Stare zmienne, które zostały zmodyfikowane w logice poniżej:
+    source_path: "/home/hunter/IdeaProjects/home-network-guardian/ansible"
+    remote_deploy_base: "/home/hunter"
+
     deployment_user: "{{ ansible_user }}"
     project_name: "portainer-service"
 
@@ -27,8 +31,10 @@
 
     - name: Task 1.1 - Copy the Docker Compose file to the remote node (RPi 5)
       ansible.builtin.copy:
-        src: "{{ source_path }}/{{ source_docker_file }}"
-        dest: "{{ remote_deploy_base }}/{{ source_docker_file }}"
+        # POPRAWKA BŁĘDU: Łączymy folder źródłowy + nazwę pliku
+        src: "{{ docker_compose_source_dir }}/{{ docker_compose_file_name }}"
+        # Cel: folder docelowy na RPi 5 + nazwa pliku
+        dest: "{{ remote_deploy_base }}/{{ docker_compose_file_name }}"
         owner: "{{ deployment_user }}"
         group: "{{ deployment_user }}"
         mode: '0644'
@@ -46,11 +52,9 @@
 
     - name: Task 3.0 - Deploy service using 'sudo docker compose -p' command
       ansible.builtin.shell:
-        cmd: "docker compose -f {{ source_docker_file }} -p {{ project_name }} up -d"
+        # ZMIANA: Używamy samej nazwy pliku, bo chdir (workdir_path) to już /home/hunter
+        cmd: "docker compose -f {{ docker_compose_file_name }} -p {{ project_name }} up -d"
         chdir: "{{ workdir_path }}"
-      # We use 'become: yes' at the playbook level, which corresponds to using 'sudo'
-      # We could add 'become_user: root' if we wanted to explicitly force root,
-      # but 'become: yes' at the play level (defaulting to root) is sufficient for 'sudo docker compose'.
       register: deploy_output
 
     - name: Task 3.1 - Display deployment status and Portainer URL

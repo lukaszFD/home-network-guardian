@@ -1,25 +1,13 @@
 ---
-# Playbook to deploy Portainer Service with custom project name and sudo.
-- name: 01 - Deploy Portainer Service with custom command
-  hosts: home_guardian_servers # Targets RPi 4B and RPi 5
+- name: 01 - Deploy Portainer Service
+  hosts: home_guardian_servers
   become: yes # Use 'sudo' for tasks where necessary
 
   vars:
-    # ZMIANA: Ścieżka do FOLDERU, gdzie znajduje się plik Docker Compose na kontrolerze (Linux Mint)
-    docker_compose_source_dir: "/home/hunter/IdeaProjects/home-network-guardian/docker"
-    # ZMIANA: Nazwa pliku do skopiowania
+    project_name: "portainer-service"
     docker_compose_file_name: "docker-compose-portainer.yml"
 
-    # Stare zmienne, które zostały zmodyfikowane w logice poniżej:
-    source_path: "/home/hunter/IdeaProjects/home-network-guardian/ansible"
-    remote_deploy_base: "/home/hunter"
-
-    deployment_user: "{{ ansible_user }}"
-    project_name: "portainer-service"
-
   tasks:
-    # --- PREPARATION OF THE REMOTE NODE (RPi 5) ---
-
     - name: Task 1.0 - Create base deployment directory on the remote node (RPi 5)
       ansible.builtin.file:
         path: "{{ remote_deploy_base }}"
@@ -27,37 +15,22 @@
         owner: "{{ deployment_user }}"
         group: "{{ deployment_user }}"
         mode: '0755'
-      when: inventory_hostname != 'pi4b' # Only run this on the remote node (RPi 5)
 
     - name: Task 1.1 - Copy the Docker Compose file to the remote node (RPi 5)
       ansible.builtin.copy:
-        # POPRAWKA BŁĘDU: Łączymy folder źródłowy + nazwę pliku
-        src: "{{ docker_compose_source_dir }}/{{ docker_compose_file_name }}"
-        # Cel: folder docelowy na RPi 5 + nazwa pliku
+        src: "{{ main_repo_source_dir }}/docker/{{ docker_compose_file_name }}"
         dest: "{{ remote_deploy_base }}/{{ docker_compose_file_name }}"
         owner: "{{ deployment_user }}"
         group: "{{ deployment_user }}"
         mode: '0644'
-      when: inventory_hostname != 'pi4b'
 
-    # --- SETTING UP THE WORKING PATH ---
-
-    - name: Task 2.0 - Define working directory based on host
-      ansible.builtin.set_fact:
-        # If it's RPi 4B, the file is already local at source_path.
-        # If it's RPi 5, we use remote_deploy_base.
-        workdir_path: "{{ source_path if inventory_hostname == 'pi4b' else remote_deploy_base }}"
-
-    # --- DEPLOYING THE DOCKER SERVICE ---
-
-    - name: Task 3.0 - Deploy service using 'sudo docker compose -p' command
+    - name: Task 2.0 - Deploy service using 'sudo docker compose -p' command
       ansible.builtin.shell:
-        # ZMIANA: Używamy samej nazwy pliku, bo chdir (workdir_path) to już /home/hunter
         cmd: "docker compose -f {{ docker_compose_file_name }} -p {{ project_name }} up -d"
-        chdir: "{{ workdir_path }}"
+        chdir: "{{ remote_deploy_base }}"
       register: deploy_output
 
-    - name: Task 3.1 - Display deployment status and Portainer URL
+    - name: Task 2.1 - Display deployment status and Portainer URL
       ansible.builtin.debug:
         msg: |
           Deployment of Portainer on {{ inventory_hostname }} finished.

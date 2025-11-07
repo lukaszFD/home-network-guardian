@@ -1,0 +1,100 @@
+---
+- name: 02 - Deploy Home Network Services (Pihole, Proxy, Passive DNS)
+  hosts: home_guardian_servers
+  become: yes # Use 'sudo' for tasks where necessary
+
+  vars:
+    project_name: "network-service"
+    docker_compose_file_name: "docker-compose-network.yml"
+    source_docker_compose_file: "{{ main_repo_source_dir }}/docker/{{docker_compose_file_name}}"
+    remote_docker_compose_file: "{{ remote_deploy_base }}/{{docker_compose_file_name}}"
+
+  tasks:
+    - name: Task 1.0 - Create base deployment directory on the remote node
+      ansible.builtin.file:
+        path: "{{ remote_deploy_base }}"
+        state: directory
+        owner: "{{ deployment_user }}"
+        group: "{{ deployment_user }}"
+        mode: '0755'
+
+    # --- Copying Core Files ---
+    - name: Task 1.1 - Copy the main Docker Compose file
+      ansible.builtin.copy:
+        src: "{{ source_docker_compose_file }}"
+        dest: "{{ remote_docker_compose_file }}"
+        owner: "{{ deployment_user }}"
+        group: "{{ deployment_user }}"
+        mode: '0644'
+
+    - name: Task 1.2 - Copy Dockerfile for passive_dns
+      ansible.builtin.copy:
+        src: "{{ main_repo_source_dir }}/config/passive-dns/Dockerfile.pdns"
+        dest: "{{ remote_deploy_base }}/Dockerfile.pdns"
+        owner: "{{ deployment_user }}"
+        group: "{{ deployment_user }}"
+        mode: '0644'
+
+    # --- Copying Configuration and Volume Files ---
+    - name: Task 2.0 - Ensure local volume directories exist on remote host
+      ansible.builtin.file:
+        path: "{{ remote_deploy_base }}/{{ item }}"
+        state: directory
+        owner: "{{ deployment_user }}"
+        group: "{{ deployment_user }}"
+        mode: '0755'
+      loop:
+        - etc-unbound
+        - etc-pihole
+        - etc-dnsmasq.d
+        - etc-passive-dns
+        - var-log-passive-dns
+        - etc-squid
+        - var-log-squid
+        - etc-squid/blocklists # Specific subdirectory for squid
+        - etc-squid-tabl
+        - var-log-squid-tabl
+
+    - name: Task 2.1 - Copy Unbound configuration
+      ansible.builtin.copy:
+        src: "{{ main_repo_source_dir }}/config/unbound/unbound.conf"
+        dest: "{{ remote_deploy_base }}/etc-unbound/unbound.conf"
+        owner: "{{ deployment_user }}"
+        group: "{{ deployment_user }}"
+        mode: '0644'
+
+    - name: Task 2.2 - Copy Squid configurations and blocklists
+      ansible.builtin.copy:
+        src: "{{ main_repo_source_dir }}/config/squid/{{ item }}"
+        dest: "{{ remote_deploy_base }}/etc-squid/{{ item }}"
+        owner: "{{ deployment_user }}"
+        group: "{{ deployment_user }}"
+        mode: '0644'
+      loop:
+        - squid.conf
+        - blocklists
+
+    - name: Task 2.3 - Copy Squid-tabl configuration
+      ansible.builtin.copy:
+        src: "{{ main_repo_source_dir }}/config/squid-tabl/squid.conf"
+        dest: "{{ remote_deploy_base }}/etc-squid-tabl/squid.conf"
+        owner: "{{ deployment_user }}"
+        group: "{{ deployment_user }}"
+        mode: '0644'
+
+    # --- Deployment ---
+    - name: Task 3.0 - Build and Deploy services using 'sudo docker compose -p'
+      ansible.builtin.shell:
+        # Use -f network.yml because we renamed and copied it to the base path
+        cmd: "docker compose -f network.yml -p {{ project_name }} up --build -d"
+        chdir: "{{ remote_deploy_base }}"
+      register: deploy_output
+
+    - name: Task 3.1 - Display deployment status
+      ansible.builtin.debug:
+        msg: |
+          Deployment of Home Network Guardian Core on {{ inventory_hostname }} finished.
+          Services deployed: unbound, pihole, passive_dns, squid, squid-tabl.
+          Pi-hole Web Interface (if enabled) at: http://{{ ansible_host }}:80
+          Squid Proxy 1 (if opened) at: {{ ansible_host }}:3128
+          Output: {{ deploy_output.stdout }}

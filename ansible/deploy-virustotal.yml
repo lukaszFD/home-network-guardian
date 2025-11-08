@@ -1,0 +1,106 @@
+---
+- name: 03 - Deploy VirusTotal Integration and MySQL Stack
+  hosts: home_guardian_servers
+  become: yes
+
+  vars:
+    project_name: "virustotal-service"
+    docker_compose_file_name: "docker-compose-virus_total.yml"
+
+    # Source paths (using group_vars)
+    source_docker_compose_file: "{{ main_repo_source_dir }}/docker/{{docker_compose_file_name}}"
+    source_virustotal_dir: "{{ main_repo_source_dir }}/config/virust_total"
+
+    # Destination paths (using group_vars)
+    remote_deploy_base_path: "{{ remote_deploy_base }}"
+    remote_docker_compose_file: "{{ remote_deploy_base_path }}/{{ docker_compose_file_name }}"
+
+    python_files:
+      - dns_log_processor.py
+      - dns_scanner.py
+      - virus_total.py
+    dockerfiles:
+      - Dockerfile.dns
+      - Dockerfile.scanner
+      - Dockerfile.virustotal
+
+  tasks:
+    - name: Task 1.0 - Create base deployment directory
+      ansible.builtin.file:
+        path: "{{ remote_deploy_base_path }}"
+        state: directory
+        owner: "{{ deployment_user }}"
+        group: "{{ deployment_user }}"
+        mode: '0755'
+
+    # --- Copying Core Docker Compose File ---
+    - name: Task 1.1 - Copy the VirusTotal Docker Compose file
+      ansible.builtin.copy:
+        src: "{{ source_docker_compose_file }}"
+        dest: "{{ remote_docker_compose_file }}"
+        owner: "{{ deployment_user }}"
+        group: "{{ deployment_user }}"
+        mode: '0644'
+
+    # --- Copying Python Scripts and Dockerfiles (Required for 'build' context) ---
+    # NOTE: These files are copied to the root remote_deploy_base,
+    # as docker-compose-virus_total.yml uses 'context: ..' (the directory above)
+
+    - name: Task 2.0 - Copy all Python scripts to the remote base directory
+      ansible.builtin.copy:
+        src: "{{ source_virustotal_dir }}/{{ item }}"
+        dest: "{{ remote_deploy_base_path }}/{{ item }}"
+        owner: "{{ deployment_user }}"
+        group: "{{ deployment_user }}"
+        mode: '0755' # Set to executable for Python scripts
+      loop: "{{ python_files }}"
+
+    - name: Task 2.1 - Copy all necessary Dockerfiles to the remote base directory
+      ansible.builtin.copy:
+        src: "{{ source_virustotal_dir }}/{{ item }}"
+        dest: "{{ remote_deploy_base_path }}/{{ item }}"
+        owner: "{{ deployment_user }}"
+        group: "{{ deployment_user }}"
+        mode: '0644'
+      loop: "{{ dockerfiles }}"
+
+    # --- Creating Required Volumes and MySQL initialization ---
+    - name: Task 3.0 - Ensure volumes directories exist on remote host
+      ansible.builtin.file:
+        path: "{{ remote_deploy_base_path }}/{{ item }}"
+        state: directory
+        owner: "{{ deployment_user }}"
+        group: "{{ deployment_user }}"
+        mode: '0755'
+      loop:
+        # Volume required for MySQL data (mysql_data is external/named volume, this is for local file based volumes)
+        - var-virustotal_logs
+        # Volume used by dns_log_processor.py to read input logs
+        - var-log-passive-dns
+
+#    - name: Task 3.1 - (Optional) Copy MySQL init script if needed
+#      # Copying an empty directory or file to handle MySQL initialization,
+#      # assuming you have some init scripts in config/mysql, though not strictly required by compose.
+#      ansible.builtin.copy:
+#        src: "{{ main_repo_source_dir }}/config/mysql/CREATE_DATABASE.sql"
+#        dest: "{{ remote_deploy_base_path }}/CREATE_DATABASE.sql"
+#        owner: "{{ deployment_user }}"
+#        group: "{{ deployment_user }}"
+#        mode: '0644'
+#      ignore_errors: yes # The existence of this file might be optional
+
+    # --- Deployment ---
+    - name: Task 4.0 - Build and Deploy VirusTotal services using 'sudo docker compose -p'
+      ansible.builtin.shell:
+        # Use --build because we rely on three custom Dockerfiles
+        cmd: "docker compose -f {{ docker_compose_file_name }} -p {{ project_name }} up --build -d"
+        chdir: "{{ remote_deploy_base_path }}"
+      register: deploy_output
+
+    - name: Task 4.1 - Display deployment status
+      ansible.builtin.debug:
+        msg: |
+          Deployment of VirusTotal Analysis Stack on {{ inventory_hostname }} finished.
+          Services deployed: mysqldb, virustotal_scanner, dns_log_processor, dns_scanner.
+          VirusTotal Scanner API (if enabled) at: http://{{ ansible_host }}:5000
+          Output: {{ deploy_output.stdout }}

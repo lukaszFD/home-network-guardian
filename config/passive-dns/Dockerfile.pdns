@@ -1,5 +1,5 @@
 # Use a lightweight base image suitable for ARM64
-FROM arm64v8/alpine:3.18
+FROM alpine:3.18
 
 # Install dnsmasq
 RUN apk update && \

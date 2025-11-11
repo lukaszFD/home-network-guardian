@@ -1,6 +1,6 @@
 ---
 - name: 01 - Deploy Portainer Service
-  hosts: home_guardian_servers
+  hosts: all_guardians
   become: yes # Use 'sudo' for tasks where necessary
 
   vars:

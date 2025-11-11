@@ -1,0 +1,78 @@
+services:
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    hostname: portainer
+    networks:
+      portainer_network:
+        ipv4_address: 172.51.0.2
+    ports:
+      - "9010:9000/tcp"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./portainer_data:/data
+    restart: unless-stopped
+
+  unbound:
+    image: klutchell/unbound:latest
+    container_name: unbound
+    hostname: unbound
+    networks:
+      firefox_network:
+        ipv4_address: 172.31.0.2
+    volumes:
+      - './etc-unbound/unbound.conf:/etc/unbound/unbound.conf'
+    restart: unless-stopped
+
+  pihole:
+    image: pihole/pihole:latest
+    container_name: pihole
+    hostname: pihole
+    networks:
+      firefox_network:
+        ipv4_address: 172.31.0.4
+    environment:
+      TZ: "Europe/Warsaw"
+      PIHOLE_DNS_: "172.31.0.2#53"
+    volumes:
+      - './etc-pihole:/etc/pihole'
+      - './etc-dnsmasq.d:/dnsmasq.d'
+    ports:
+      - "80:80/tcp"
+    restart: unless-stopped
+    depends_on:
+      - unbound
+  firefox:
+    image: lscr.io/linuxserver/firefox:latest
+    container_name: firefox
+    hostname: firefox
+    tmpfs:
+      - /config
+    networks:
+      firefox_network:
+        ipv4_address: 172.31.0.3
+    dns: 172.31.0.4
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Warsaw
+      - FIREFOX_CLI=https://www.linuxserver.io/
+    security_opt:
+      - seccomp=unconfined
+    ports:
+      - "4000:3000"
+      - "4001:3001"
+    shm_size: 2gb
+    restart: unless-stopped
+
+networks:
+  firefox_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.31.0.0/24
+  portainer_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.51.0.0/24

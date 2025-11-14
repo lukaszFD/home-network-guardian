@@ -2,7 +2,7 @@
 
 # Define output file with current date
 CURRENT_DATE=$(date +%Y_%m_%d)
-OUTPUT_FILE="deployment_script_${CURRENT_DATE}.sql"
+OUTPUT_FILE="deployment_script.sql"
 
 # Clear previous deployment script if it exists
 if [ -f "$OUTPUT_FILE" ]; then

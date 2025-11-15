@@ -1,0 +1,70 @@
+---
+- name: 04 - Deploy Secure Firefox/Pihole Stack on VM
+  hosts: all_guardians # Target hosts defined in hosts.ini
+  become: yes # Use 'sudo' for tasks where necessary
+
+  vars:
+    # --- Configuration Variables ---
+    project_name: "firefox-service"
+    docker_compose_file_name: "docker-compose-firefox.yml"
+
+    source_docker_compose_file: "{{ main_repo_source_dir }}/docker/{{ docker_compose_file_name }}"
+    remote_docker_compose_file: "{{ remote_deploy_base }}/{{ docker_compose_file_name }}"
+
+
+  tasks:
+    - name: Task 1.0 - Create base deployment directory on the remote node
+      ansible.builtin.file:
+        path: "{{ remote_deploy_base }}"
+        state: directory
+        owner: "{{ deployment_user }}"
+        group: "{{ deployment_user }}"
+        mode: '0755'
+
+    # --- Copying Core Files ---
+    - name: Task 1.1 - Copy the Firefox Docker Compose file
+      ansible.builtin.copy:
+        src: "{{ source_docker_compose_file }}"
+        dest: "{{ remote_docker_compose_file }}"
+        owner: "{{ deployment_user }}"
+        group: "{{ deployment_user }}"
+        mode: '0644'
+
+    # --- Copying Configuration and Volume Files ---
+    - name: Task 2.0 - Ensure local volume directories exist on remote host
+      ansible.builtin.file:
+        path: "{{ remote_deploy_base }}/{{ item }}"
+        state: directory
+        owner: "{{ deployment_user }}"
+        group: "{{ deployment_user }}"
+        mode: '0755'
+      loop:
+        - etc-unbound-firefox
+        - etc-pihole_firefox
+        - etc-dnsmasq_pihole_firefox
+
+    - name: Task 2.1 - Copy Unbound configuration for Firefox stack
+      # NOTE: This task assumes you have a separate unbound.conf for this stack.
+      # Create the file: ./config/unbound-firefox/unbound.conf
+      ansible.builtin.copy:
+        src: "{{ main_repo_source_dir }}/config/unbound-firefox/unbound.conf"
+        dest: "{{ remote_deploy_base }}/etc-unbound-firefox/unbound.conf"
+        owner: "{{ deployment_user }}"
+        group: "{{ deployment_user }}"
+        mode: '0644'
+
+    # --- Deployment ---
+    - name: Task 3.0 - Deploy services using 'sudo docker compose -p'
+      ansible.builtin.shell:
+        cmd: "docker compose -f {{ docker_compose_file_name }} -p {{ project_name }} up --build -d"
+        chdir: "{{ remote_deploy_base }}"
+      register: deploy_output
+
+    - name: Task 3.1 - Display deployment status
+      ansible.builtin.debug:
+        msg: |
+          Deployment of Firefox Stack on {{ inventory_hostname }} finished.
+          Services deployed: unbound_firefox, pihole_firefox, firefox.
+          Firefox is accessible via VNC or Web interface (Ports 4000/4001): {{ ansible_host }}:4000
+          Pi-hole Web Interface (Admin Port) at: http://{{ ansible_host }}:8088
+          Output: {{ deploy_output.stdout }}

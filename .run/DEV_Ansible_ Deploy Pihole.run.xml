@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Ansible: Deploy Pihole (DEV VM)" type="ShConfigurationType">
-    <option name="SCRIPT_TEXT" value="$USER_HOME$/ansible_mint_venv/bin/ansible-playbook -i $PROJECT_DIR$/ansible/hosts.ini $PROJECT_DIR$/ansible/deploy-network.yml --limit dev_vm" />
+  <configuration default="false" name="Ansible: Deploy Pihole (vm-prox-dev)" type="ShConfigurationType">
+    <option name="SCRIPT_TEXT" value="$USER_HOME$/ansible_mint_venv/bin/ansible-playbook -i $PROJECT_DIR$/ansible/hosts.ini $PROJECT_DIR$/ansible/deploy-network.yml --limit vm-prox-dev" />
     <option name="INDEPENDENT_SCRIPT_PATH" value="true" />
     <option name="SCRIPT_PATH" value="" />
     <option name="SCRIPT_OPTIONS" value="" />

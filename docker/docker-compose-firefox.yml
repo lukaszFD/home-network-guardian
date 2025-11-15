@@ -24,7 +24,8 @@ services:
       - './etc-pihole_firefox:/etc/pihole'
       - './etc-dnsmasq_pihole_firefox:/etc/dnsmasq.d'
     ports:
-      - "8088:80/tcp"
+      - "80:80/tcp"
+      - "443:443/tcp"
     restart: unless-stopped
     depends_on:
       - unbound_firefox

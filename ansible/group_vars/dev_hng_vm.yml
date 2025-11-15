@@ -4,7 +4,7 @@
 main_repo_source_dir: "/home/hunter/IdeaProjects/home-network-guardian"
 
 # Base directory on the remote host (VM) for deployment
-remote_deploy_base: "/home/hunter"
+remote_deploy_base: "/home/{{ ansible_user }}"
 
 # The user used for deployment
 deployment_user: "{{ ansible_user }}"

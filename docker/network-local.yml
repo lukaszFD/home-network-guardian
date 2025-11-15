@@ -1,18 +1,4 @@
 services:
-  portainer:
-    image: portainer/portainer-ce:latest
-    container_name: portainer
-    hostname: portainer
-    networks:
-      portainer_network:
-        ipv4_address: 172.51.0.2
-    ports:
-      - "9010:9000/tcp"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./portainer_data:/data
-    restart: unless-stopped
-
   unbound:
     image: klutchell/unbound:latest
     container_name: unbound
@@ -71,8 +57,3 @@ networks:
     ipam:
       config:
         - subnet: 172.31.0.0/24
-  portainer_network:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.51.0.0/24

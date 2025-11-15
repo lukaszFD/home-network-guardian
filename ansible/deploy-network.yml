@@ -1,4 +1,5 @@
 ---
+- import_playbook: copy-env.yml
 - name: 02 - Deploy Home Network Services (Pihole, Proxy, Passive DNS)
   hosts: all_guardians
   become: yes # Use 'sudo' for tasks where necessary

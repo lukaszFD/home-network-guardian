@@ -3,6 +3,6 @@
 # Local source directory where the Ansible playbook is run from
 main_repo_source_dir: "/home/hunter/IdeaProjects/home-network-guardian"
 # Base directory on the remote host for temporary file copies (Portainer, etc.)
-remote_deploy_base: "/home/hunter"
+remote_deploy_base: "/home/{{ ansible_user }}"
 # The user used for deployment
 deployment_user: "{{ ansible_user }}"

@@ -1,6 +1,7 @@
 ---
+- import_playbook: copy-env.yml
 - name: 03 - Deploy VirusTotal Integration and MySQL Stack
-  hosts: home_guardian_servers
+  hosts: all_guardians
   become: yes
 
   vars:
@@ -10,10 +11,12 @@
     # Source paths (using group_vars)
     source_docker_compose_file: "{{ main_repo_source_dir }}/docker/{{docker_compose_file_name}}"
     source_virustotal_dir: "{{ main_repo_source_dir }}/config/virust_total"
+    source_mysql_script: "{{ main_repo_source_dir }}/config/mysql/deployment_script.sql" # New: path to the SQL script
 
     # Destination paths (using group_vars)
     remote_deploy_base_path: "{{ remote_deploy_base }}"
     remote_docker_compose_file: "{{ remote_deploy_base_path }}/{{ docker_compose_file_name }}"
+    remote_env_file: "{{ remote_deploy_base_path }}/.env" # Path to the .env file copied earlier
 
     python_files:
       - dns_log_processor.py
@@ -33,6 +36,37 @@
         group: "{{ deployment_user }}"
         mode: '0755'
 
+    # --- Read Passwords and User from .env file on remote host ---
+    - name: Task 1.0.1 - Read MYSQL_PASSWORD from .env
+      ansible.builtin.shell:
+        cmd: "grep 'MYSQL_PASSWORD=' {{ remote_env_file }} | cut -d '=' -f 2 | tr -d '\"'"
+      register: mysql_password_output
+      changed_when: false
+      failed_when: mysql_password_output.rc != 0 or not mysql_password_output.stdout
+      delegate_to: "{{ inventory_hostname }}" # Ensure this is run on the remote host
+
+    - name: Task 1.0.2 - Read MYSQL_ROOT_PASSWORD from .env
+      ansible.builtin.shell:
+        cmd: "grep 'MYSQL_ROOT_PASSWORD=' {{ remote_env_file }} | cut -d '=' -f 2 | tr -d '\"'"
+      register: mysql_root_password_output
+      changed_when: false
+      failed_when: mysql_root_password_output.rc != 0 or not mysql_root_password_output.stdout
+      delegate_to: "{{ inventory_hostname }}" # Ensure this is run on the remote host
+
+    - name: Task 1.0.2.1 - Read MYSQL_USER from .env # <-- NOWE ZADANIE
+      ansible.builtin.shell:
+        cmd: "grep 'MYSQL_USER=' {{ remote_env_file }} | cut -d '=' -f 2 | tr -d '\"'"
+      register: mysql_app_user_output
+      changed_when: false
+      failed_when: mysql_app_user_output.rc != 0 or not mysql_app_user_output.stdout
+      delegate_to: "{{ inventory_hostname }}"
+
+    - name: Task 1.0.3 - Set facts for MySQL credentials # <-- ZAKTUALIZOWANE
+      ansible.builtin.set_fact:
+        mysql_password: "{{ mysql_password_output.stdout | trim }}"
+        mysql_root_password: "{{ mysql_root_password_output.stdout | trim }}"
+        mysql_app_user: "{{ mysql_app_user_output.stdout | trim }}" # Ustawia mysql_app_user
+
     # --- Copying Core Docker Compose File ---
     - name: Task 1.1 - Copy the VirusTotal Docker Compose file
       ansible.builtin.copy:
@@ -43,9 +77,6 @@
         mode: '0644'
 
     # --- Copying Python Scripts and Dockerfiles (Required for 'build' context) ---
-    # NOTE: These files are copied to the root remote_deploy_base,
-    # as docker-compose-virus_total.yml uses 'context: ..' (the directory above)
-
     - name: Task 2.0 - Copy all Python scripts to the remote base directory
       ansible.builtin.copy:
         src: "{{ source_virustotal_dir }}/{{ item }}"
@@ -78,16 +109,14 @@
         # Volume used by dns_log_processor.py to read input logs
         - var-log-passive-dns
 
-#    - name: Task 3.1 - (Optional) Copy MySQL init script if needed
-#      # Copying an empty directory or file to handle MySQL initialization,
-#      # assuming you have some init scripts in config/mysql, though not strictly required by compose.
-#      ansible.builtin.copy:
-#        src: "{{ main_repo_source_dir }}/config/mysql/CREATE_DATABASE.sql"
-#        dest: "{{ remote_deploy_base_path }}/CREATE_DATABASE.sql"
-#        owner: "{{ deployment_user }}"
-#        group: "{{ deployment_user }}"
-#        mode: '0644'
-#      ignore_errors: yes # The existence of this file might be optional
+    - name: Task 3.9 - Ensure 'mysql_network' exists for VirusTotal services
+      ansible.builtin.shell:
+        # Check if network exists. If not, create it.
+        # This is a good practice to ensure idempotency.
+        cmd: "docker network inspect mysql_network >/dev/null 2>&1 || docker network create mysql_network"
+      register: network_create_result
+      changed_when: network_create_result.rc != 0
+      # The task changes state only if the network was actually created (rc != 0 from the inspect command)
 
     # --- Deployment ---
     - name: Task 4.0 - Build and Deploy VirusTotal services using 'sudo docker compose -p'
@@ -97,10 +126,29 @@
         chdir: "{{ remote_deploy_base_path }}"
       register: deploy_output
 
+    # --- Database Initialization (AFTER mysqldb container is running) ---
+    - name: Task 4.0.1 - Template the MySQL deployment script (replace password placeholder)
+      ansible.builtin.template:
+        src: "{{ source_mysql_script }}"
+        dest: "{{ remote_deploy_base_path }}/deployment_script_rendered.sql"
+        owner: "{{ deployment_user }}"
+        group: "{{ deployment_user }}"
+        mode: '0644'
+
+    - name: Task 4.0.2 - Execute the templated MySQL deployment script
+      # This runs the script inside the running 'mysql_db' container
+      ansible.builtin.shell:
+        cmd: "sudo docker exec -i mysql_db mysql -u root -p'{{ mysql_root_password }}' < {{ remote_deploy_base_path }}/deployment_script_rendered.sql"
+        # Using -i is important for piping the file content into the container's shell
+      register: db_init_result
+      changed_when: db_init_result.rc == 0 and 'created' in db_init_result.stdout
+      failed_when: db_init_result.rc != 0 and 'ERROR 1007' not in db_init_result.stderr
+
     - name: Task 4.1 - Display deployment status
       ansible.builtin.debug:
         msg: |
           Deployment of VirusTotal Analysis Stack on {{ inventory_hostname }} finished.
           Services deployed: mysqldb, virustotal_scanner, dns_log_processor, dns_scanner.
+          MySQL Database initialization status: {{ db_init_result.stdout | default('Not executed or No output.') }}
           VirusTotal Scanner API (if enabled) at: http://{{ ansible_host }}:5000
           Output: {{ deploy_output.stdout }}

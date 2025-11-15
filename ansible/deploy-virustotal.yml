@@ -1,4 +1,5 @@
 ---
+- import_playbook: backup-proxmox.yml
 - import_playbook: copy-env.yml
 - name: 03 - Deploy VirusTotal Integration and MySQL Stack
   hosts: all_guardians

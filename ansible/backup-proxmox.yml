@@ -1,0 +1,34 @@
+# ansible/backup-proxmox.yml
+---
+- name: 01 - Proxmox Snapshot - Create Backup before DEV Deployment
+  hosts: localhost
+  gather_facts: yes
+  vars_files:
+    - secrets/proxmox_credentials.yml
+
+  vars:
+    dev_hng_vm_id: 100
+
+  tasks:
+    - name: Task 1.1 - Create VZDump Backup for dev_hng_vm before deployment
+      community.proxmox.proxmox_backup:
+        api_host: "{{ proxmox_host }}"
+        api_user: "{{ proxmox_user_token.split('!')[0] }}"
+        api_token_id: "{{ proxmox_user_token.split('!')[1] }}"
+        api_token_secret: "{{ proxmox_api_secret }}"
+        vmids: ["{{ dev_hng_vm_id }}"]
+        backup_mode: snapshot
+        mode: include
+        storage: "backup-pool"
+        description: "VZDump backup before deploying Ansible stack (triggered by deploy-virustotal.yml)"
+        wait: true
+        wait_timeout: 600
+        validate_certs: false
+      delegate_to: localhost
+      when: ansible_limit is defined and ('vm-prox-dev' in ansible_limit or 'dev_hng_vm' in ansible_limit)
+      register: backup_result
+
+    - name: Task 1.2 - Display Backup result
+      ansible.builtin.debug:
+        msg: "VZDump Backup dla VMID {{ dev_hng_vm_id }} zakończony. ID zadania Proxmox: {{ backup_result.backup_job.upid | default('N/A') }}."
+      when: backup_result is defined and backup_result.changed

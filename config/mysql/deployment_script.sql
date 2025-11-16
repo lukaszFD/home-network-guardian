@@ -1,6 +1,6 @@
 -- Database creation script
 CREATE DATABASE virus_total;
-CREATE USER '{{ mysql_app_user }}'@'%' IDENTIFIED BY '{{ mysql_password }}';
+CREATE USER IF NOT EXISTS '{{ mysql_app_user }}'@'%' IDENTIFIED BY '{{ mysql_password }}';
 GRANT ALL PRIVILEGES ON virus_total.* TO '{{ mysql_app_user }}'@'%';
 FLUSH PRIVILEGES;
 
@@ -51,7 +51,6 @@ CREATE TABLE virus_total.yara_detections (
         REFERENCES file_scans(id)
         ON DELETE CASCADE
 );
-
 
 -- Index creation scripts
 ALTER TABLE virus_total.dns_queries ADD INDEX idx_domain (domain);

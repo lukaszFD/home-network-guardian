@@ -2,9 +2,7 @@
 main_repo_source_dir: "/home/hunter/IdeaProjects/home-network-guardian"
 
 # Base directory on the remote host (VM/RPi) for deployment
-# Używa {{ ansible_user }} (np. hunter lub box) do określenia ścieżki /home/[user]
 remote_deploy_base: "/home/{{ ansible_user }}"
 
 # The user used for deployment (owner and group for copied files and directories)
-# Będzie to hunter dla pi5 i dev_hng_vm, oraz box dla jump_box.
 deployment_user: "{{ ansible_user }}"

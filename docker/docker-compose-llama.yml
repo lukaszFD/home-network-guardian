@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  # This service runs the Ollama server, which manages the LLM models.
+  ollama:
+    # Uses the official multi-arch image (works on both AMD64 and ARM64).
+    image: ollama/ollama:latest
+    container_name: ollama-llm-server
+    # Map the internal port 11434 (Ollama API) to the host machine.
+    # You can access the API at http://localhost:11434
+    ports:
+      - "11434:11434"
+    # Persistently store models and user data outside the container
+    # in a Docker volume named 'ollama_data'.
+    volumes:
+      - ollama_data:/root/.ollama
+    # Restart the service if it stops, unless explicitly stopped.
+    restart: unless-stopped
+    # Optional: If you use the Dell with a dedicated GPU (NVIDIA),
+    # uncomment the lines below to enable GPU acceleration.
+    # Only remove the '#' if you have a compatible NVIDIA driver setup.
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
+volumes:
+  # Define the persistent volume for storing model weights (approx. 4 GB per Llama 2 7B model).
+  ollama_data:
+    driver: local

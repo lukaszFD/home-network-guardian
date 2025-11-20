@@ -1,0 +1,47 @@
+---
+- name: 05 - Deploy Ollama (LLM) Server Stack
+  hosts: all_guardians
+  become: yes
+
+  vars:
+    project_name: "ollama-llm-service"
+    docker_compose_file_name: "docker-compose-llama.yml"
+
+    source_docker_compose_file: "{{ main_repo_source_dir }}/docker/{{ docker_compose_file_name }}"
+    remote_docker_compose_file: "{{ remote_deploy_base }}/{{ docker_compose_file_name }}"
+
+  tasks:
+    - name: Task 1.0 - Create base deployment directory on the remote node (e.g., /home/hunter)
+      ansible.builtin.file:
+        path: "{{ remote_deploy_base }}"
+        state: directory
+        owner: "{{ deployment_user }}"
+        group: "{{ deployment_user }}"
+        mode: '0755'
+
+    # --- Copying Core Files ---
+    - name: Task 1.1 - Copy the Ollama Docker Compose file (docker-compose-llama.yml)
+      ansible.builtin.copy:
+        src: "{{ source_docker_compose_file }}"
+        dest: "{{ remote_docker_compose_file }}"
+        owner: "{{ deployment_user }}"
+        group: "{{ deployment_user }}"
+        mode: '0644'
+
+    # --- Deployment ---
+    - name: Task 3.0 - Deploy Ollama service using 'sudo docker compose -p'
+      ansible.builtin.shell:
+        cmd: "docker compose -f {{ docker_compose_file_name }} -p {{ project_name }} up -d"
+        chdir: "{{ remote_deploy_base }}"
+      register: deploy_output
+
+    - name: Task 3.1 - Display deployment status and access info
+      ansible.builtin.debug:
+        msg: |
+          Deployment of Ollama LLM Server on {{ inventory_hostname }} finished.
+          Service deployed to: {{ remote_deploy_base }}
+          Ollama API is accessible at: http://{{ ansible_host }}:11434
+          Next steps: 
+          1. Wait a moment for the server to start.
+          2. Connect via 'docker exec -it ollama-llm-server ollama run llama2' to download and run the model.
+          Output: {{ deploy_output.stdout }}

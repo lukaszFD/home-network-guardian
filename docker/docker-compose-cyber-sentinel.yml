@@ -1,13 +1,15 @@
+version: '3.8'
+
 services:
   n8n:
     image: n8nio/n8n:1.111.0
     container_name: n8n-server
-    ports:
-      - "5678:5678"
+    network_mode: host
     volumes:
       - n8n_data:/home/node/.n8n
-    user: "${UID}:${GID}"
+    user: "1000:1000"
     environment:
+      - N8N_HOST=127.0.0.1
       - N8N_PORT=5678
       - NODE_ENV=production
       - N8N_SECURE_COOKIE=false
@@ -15,8 +17,18 @@ services:
       - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
       - N8N_RUNNERS_ENABLED=true
       - GENERIC_TIMEZONE=Europe/Warsaw
-      - TZ=Europe/Warsaw
     restart: unless-stopped
+
+  kali:
+    image: kalilinux/kali-rolling
+    container_name: kali_scanner
+    restart: unless-stopped
+    network_mode: host
+
+    tty: true
+    entrypoint: ["/bin/bash", "-c", "tail -f /dev/null"]
+    volumes:
+      - ./kali_data:/root/data
 
 volumes:
   n8n_data:

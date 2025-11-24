@@ -10,7 +10,7 @@
 #   -d                 : Runs the containers in detached mode (in the background).
 
 # Example 1: Starts a Portainer stack using 'portainer.yml' and names the project 'portainer-service'.
-sudo docker compose -f portainer.yml -p portainer-service up -d
+sudo docker compose -f docker-compose-cyber-sentinel.yml -p cyber-sentinel-service up -d
 
 # Example 2: Starts a Pi-Alert stack using 'pi_alert.yml' and names the project 'pialert-service'.
 sudo docker compose -f pi_alert.yml -p pialert-service up -d
